@@ -1,0 +1,11 @@
+.marketing-workspace .marketing-activity-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.marketing-workspace .marketing-activity{min-height:0;padding:18px;display:flex;flex-direction:column;align-items:flex-start;gap:10px;text-align:left;margin:0}
+.marketing-workspace .marketing-activity>svg{width:24px;height:24px}
+.marketing-workspace .marketing-activity h2{font-size:17px;margin:0}
+.marketing-workspace .marketing-activity p{font-size:13px;line-height:1.6;margin:0;color:var(--muted)}
+.marketing-workspace .marketing-activity b{font-size:13px;margin-top:auto}
+.marketing-workspace .marketing-activity .flex-actions{margin-top:auto;gap:8px}
+.form-workspace-tabs{display:flex;gap:22px;border-bottom:1px solid var(--line,#e3e5ed);margin:0 0 18px}
+.form-workspace-tabs a{padding:10px 2px;font-size:14px;border-bottom:2px solid transparent;color:var(--muted,#707587)}
+.form-workspace-tabs a[aria-current=page]{color:var(--primary,#6950d8);border-color:currentColor;font-weight:600}
+.video-rich-field{margin:18px 0}.video-rich-field h3{font-size:15px;margin:0 0 10px}.video-rich-field .rich-edit-surface{min-height:160px;max-height:360px;overflow:auto}

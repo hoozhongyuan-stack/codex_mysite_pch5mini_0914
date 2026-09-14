@@ -1,0 +1,111 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1788773819995,
+      "tag": "0000_gray_stephen_strange",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1788793235076,
+      "tag": "0001_plain_drax",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1788840931436,
+      "tag": "0002_neat_pride",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1788841631440,
+      "tag": "0003_loving_charles_xavier",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1788843296961,
+      "tag": "0004_youthful_pepper_potts",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1788843399957,
+      "tag": "0005_asset_reference_guards",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1788843689790,
+      "tag": "0006_article_category_hierarchy",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1788863837505,
+      "tag": "0007_deep_jubilee",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1788865926163,
+      "tag": "0008_sloppy_annihilus",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1788923351321,
+      "tag": "0009_worthless_wallow",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1788950000000,
+      "tag": "0010_brand_asset_guards",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1788984395034,
+      "tag": "0011_points_redemption",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1789056000000,
+      "tag": "0012_order_channel_guard",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1789056000001,
+      "tag": "0013_variant_inventory",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1789358400000,
+      "tag": "0014_behavior_events",
+      "breakpoints": true
+    }
+  ]
+}

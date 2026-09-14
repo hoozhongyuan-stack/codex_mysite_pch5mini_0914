@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+const base='http://localhost:3001',jar=new Map();let checks=0;
+const remember=r=>{for(const c of r.headers.getSetCookie()){const pair=c.split(';')[0],i=pair.indexOf('=');jar.set(pair.slice(0,i),pair.slice(i+1));}};
+const headers=()=>({cookie:[...jar].map(([k,v])=>k+'='+v).join('; ')});
+const get=p=>fetch(base+p,{headers:headers()});const post=(p,data,origin=base)=>fetch(base+p,{method:'POST',headers:{...headers(),Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(data)});
+async function json(r){const d=await r.json();assert.ok(r.ok,JSON.stringify(d));remember(r);return d;}
+const check=(v,l)=>{assert.ok(v,l);checks++;};
+remember(await fetch(base+'/signin-with-chatgpt?return_to=%2F',{redirect:'manual'}));
+for(const [i,provider] of ['google','wechat','facebook'].entries())await json(await post('/api/identity-admin/social-save',{provider,enabled:true,sort:i,mode:'sandbox'}));
+const config=await json(await get('/api/social/status'));check(config.sandboxAvailable&&config.realLoginAvailable===false,'sandbox available, real unavailable');
+const snap=await json(await get('/api/admin'));const policies=Object.fromEntries(snap.policies.filter(p=>['terms','privacy'].includes(p.kind)).map(p=>[p.kind,p.version]));
+check((await post('/api/social/start',{provider:'google'},'https://evil.test')).status===403,'CSRF blocked');
+const start=await json(await post('/api/social/start',{provider:'google'}));const finish={...policies,ticket:start.ticket,firstName:'Demo',lastName:'Sandbox',consent:true};const result=await json(await post('/api/social/finish',finish));check(result.user.sandbox&&result.user.registrationSource==='sandbox:google','new sandbox Google source');check(!result.user.verified&&result.user.email.endsWith('@sandbox.invalid'),'synthetic unverified email');check(!result.session,'session token not exposed in JSON');
+check((await post('/api/social/finish',finish)).status===400,'ticket replay blocked');check((await json(await get('/api/visitor/session'))).user.id===result.user.id,'cookie session works');
+const link=await json(await post('/api/social/start',{provider:'wechat',intent:'link'}));const linked=await json(await post('/api/social/finish',{...finish,ticket:link.ticket}));check(linked.user.id===result.user.id&&linked.user.providers.length===2,'link same account');check(linked.user.registrationSource==='sandbox:google','first source immutable');
+await json(await post('/api/social/unlink',{provider:'wechat'}));check((await post('/api/social/unlink',{provider:'google'})).status===400,'last method protected');
+await json(await post('/api/identity-admin/save-user-profile',{id:result.user.id,country:'CN',city:'上海',company:'Sandbox Demo'}));const users=await json(await get('/api/identity-admin/users?source=sandbox%3Agoogle&country=CN&company=Sandbox%20Demo&verified=false'));check(users.rows.some(u=>u.id===result.user.id&&u.city==='上海'),'metadata filters');
+check((await post('/api/identity-admin/save-user-profile',{id:result.user.id,registrationSource:'email'})).status===400,'source edit blocked');
+await json(await post('/api/identity-admin/set-user-enabled',{id:result.user.id,enabled:false}));check(!(await json(await get('/api/visitor/session'))).user,'disabled session revoked');
+await json(await post('/api/identity-admin/set-user-enabled',{id:result.user.id,enabled:true}));check(!(await json(await get('/api/visitor/session'))).user,'enable never revives revoked session');
+console.log(checks+' local sandbox HTTP checks passed. Clearly marked synthetic visitor retained.');

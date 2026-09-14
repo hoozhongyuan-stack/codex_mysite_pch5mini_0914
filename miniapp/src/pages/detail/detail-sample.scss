@@ -1,0 +1,50 @@
+/* Shared product, article and points detail layout. */
+.detail-sample {
+  .content { padding: 20px 18px 24px; }
+  .detail-media { width: 100%; height: 280px; background: #edf1ea; }
+  .hero { width: 100%; height: 100%; display: block; }
+  .page-title { font-size: 22px; line-height: 1.4; margin: 0 0 12px; overflow-wrap: anywhere; }
+  .article-meta { font-size: 12px; line-height: 1.6; margin: 0 0 16px; gap: 6px 14px; }
+  .intro { font-size: 14px; line-height: 1.75; margin-bottom: 18px; }
+  .product-purchase-inline { display: block; padding: 14px 0; margin: 18px 0; }
+  .product-price-row { width: 100%; justify-content: space-between; margin-bottom: 12px; min-width: 0; }
+  .detail-price { font-size: 24px; line-height: 1.4; overflow-wrap: anywhere; }
+  .product-purchase-actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; min-width: 0; }
+  .product-purchase-actions picker { grid-column: 1 / -1; min-width: 0; }
+  .product-purchase-actions .field-input { height: auto; min-height: 44px; margin: 0; padding: 10px 12px; font-size: 13px; line-height: 1.7; white-space: normal; overflow-wrap: anywhere; }
+  .product-purchase-actions button { width: 100%; line-height: 44px; font-size: 14px; }
+  .section-title { font-size: 17px; margin: 20px 0 12px; }
+  .spec { font-size: 13px; padding: 10px 0; overflow-wrap: anywhere; }
+  .rich-body, .body { font-size: 15px; line-height: 1.85; max-width: 100%; overflow-wrap: anywhere; }
+  .rich-h2 { font-size: 20px; }
+  .rich-h3 { font-size: 18px; }
+  .rich-h4 { font-size: 16px; }
+  .body-image { display: block; width: 100%; max-width: 100%; height: auto; margin-top: 14px; border-radius: 8px; }
+  .body-video { display: block; width: 100%; max-width: 100%; height: 190px; }
+  .rich-table-scroll { width: 100%; max-width: 100%; margin: 14px 0; }
+  .rich-table { display: inline-block; min-width: 100%; margin: 0; overflow: visible; vertical-align: top; }
+  .rich-tableCell, .rich-tableHeader { flex: 1 0 120px; min-width: 120px; width: 120px; font-size: 13px; overflow-wrap: anywhere; }
+  .content-interactions { margin-top: 24px; padding-top: 16px; gap: 8px; }
+  .content-interactions button { font-size: 13px; }
+  button, .field-input { transition: opacity 140ms ease, background-color 140ms ease, transform 140ms ease; }
+  .detail-pressed { opacity: .78; transform: scale(.98); }
+  .detail-field-pressed { background: #edf1ea; }
+}
+.detail-skeleton { background: #e8ede5; border-radius: 6px; }
+.detail-skeleton-media { width: 100%; height: 280px; border-radius: 0; }
+.detail-skeleton-title { width: 72%; height: 28px; margin: 0 0 18px; }
+.detail-skeleton-line { width: 100%; height: 14px; margin-bottom: 12px; }
+.detail-skeleton-line.short { width: 58%; }
+.detail-loading-label { display: block; font-size: 12px; color: #718074; margin-top: 22px; }
+.detail-load-error { padding: 70px 24px; text-align: center; }
+.detail-load-error > text { display: block; }
+.detail-error-message { margin: 12px 0 22px; font-size: 13px; color: #718074; }
+.detail-load-error button { width: 150px; min-height: 44px; }
+.detail-image-error { height: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column; font-size: 13px; color: #718074; }
+.detail-image-error button { margin-top: 12px; background: #fff; color: #2d4c39; font-size: 13px; min-height: 44px; }
+@media (prefers-reduced-motion: reduce) {
+  .detail-sample button, .detail-sample .field-input { transition: none; }
+  .detail-sample .detail-pressed { transform: none; }
+}
+
+.points-detail .product-purchase-actions button { grid-column: 1 / -1; }

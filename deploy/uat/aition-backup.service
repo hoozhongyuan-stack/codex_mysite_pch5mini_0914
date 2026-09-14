@@ -1,0 +1,11 @@
+[Unit]
+Description=Aition UAT consistent private backup
+After=postgresql.service
+[Service]
+Type=oneshot
+User=root
+UMask=0077
+ExecStart=/usr/bin/python3 /srv/aition/current/deploy/uat/backup-uat.py
+TimeoutStartSec=2h
+TimeoutStopSec=5min
+Nice=10

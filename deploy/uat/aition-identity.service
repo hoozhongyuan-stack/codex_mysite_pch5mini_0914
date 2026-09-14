@@ -1,0 +1,19 @@
+[Unit]
+Description=Aition UAT identity
+After=network.target postgresql.service
+[Service]
+User=aition
+Group=aition
+WorkingDirectory=/srv/aition/current/identity
+EnvironmentFile=/etc/aition/identity.env
+ExecStart=/srv/aition/venv/bin/gunicorn --bind 127.0.0.1:3002 --workers 1 --threads 4 --timeout 120 config.wsgi:application
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/aition/shared
+[Install]
+WantedBy=multi-user.target

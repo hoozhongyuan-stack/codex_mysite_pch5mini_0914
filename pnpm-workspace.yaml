@@ -1,0 +1,13 @@
+allowBuilds:
+  esbuild: true
+  sharp: false
+  workerd: true
+
+overrides:
+  react: 19.2.8
+  react-dom: 19.2.8
+  react-server-dom-webpack: 19.2.8
+  sharp: 0.35.0
+
+patchedDependencies:
+  image-size@2.0.2: patches/image-size@2.0.2.patch

@@ -1,0 +1,9 @@
+[Unit]
+Description=Optional daily Aition UAT backup
+[Timer]
+OnCalendar=*-*-* 03:30:00
+RandomizedDelaySec=10min
+Persistent=true
+Unit=aition-backup.service
+[Install]
+WantedBy=timers.target

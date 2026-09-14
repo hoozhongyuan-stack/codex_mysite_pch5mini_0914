@@ -1,0 +1,243 @@
+.points-store .points-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+.points-store .points-heading h1 {
+  margin: 0 0 10px;
+}
+.points-store .points-heading p {
+  margin: 0;
+  color: var(--muted-foreground, #738075);
+}
+.points-balance-card {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 5px 20px;
+  min-width: 220px;
+  padding: 18px 22px;
+  border: 1px solid #dce5dc;
+  border-radius: 16px;
+  background: #f0f5ee;
+  text-decoration: none;
+  color: inherit;
+}
+.points-balance-card span {
+  font-size: 13px;
+  align-self: center;
+}
+.points-balance-card strong {
+  font-size: 28px;
+  line-height: 1.1;
+  text-align: right;
+}
+.points-balance-card small {
+  grid-column: 1/-1;
+  font-size: 12px;
+  color: #637267;
+}
+.points-store .points-search {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 18px 0;
+  margin-bottom: 24px;
+  border-top: 1px solid #e1e7df;
+  border-bottom: 1px solid #e1e7df;
+}
+.points-store .points-search > input {
+  flex: 1;
+  min-width: 200px;
+}
+.points-store .points-search > label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.points-store .points-search input[type='checkbox'] {
+  width: 17px;
+  height: 17px;
+  accent-color: #2c4a35;
+}
+.points-store .points-mall-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+.points-store .points-card {
+  padding: 16px;
+  border: 1px solid #e1e7df;
+  border-radius: 16px;
+  overflow: hidden;
+}
+.points-store .points-card img {
+  width: 100%;
+  aspect-ratio: 4/3;
+  object-fit: cover;
+  border-radius: 10px;
+}
+.points-product-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+.points-product-link h2 {
+  font-size: 19px;
+  margin: 16px 0 8px;
+}
+.points-store .points-card > p {
+  font-size: 12px;
+  color: #768078;
+  overflow-wrap: anywhere;
+  margin: 8px 0 14px;
+}
+.points-store .points-card > strong {
+  font-size: 20px;
+}
+.points-store .points-card .btn {
+  font-size: 14px;
+}
+.redemption-back {
+  font-size: 13px;
+  display: inline-block;
+  margin-bottom: 16px;
+}
+.redemption-note {
+  color: #647168;
+  font-size: 14px;
+  margin: 12px 0;
+}
+.redemption-quantity {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 22px 0;
+}
+.redemption-quantity input {
+  width: 90px;
+  border: 1px solid #d9e1d8;
+  border-radius: 8px;
+  padding: 10px;
+}
+.redemption-primary {
+  background: #2d4936 !important;
+  color: white !important;
+  border-color: #2d4936 !important;
+}
+.redemption-checkout {
+  width: min(720px, calc(100vw - 32px)) !important;
+  max-width: 720px !important;
+  max-height: 90dvh;
+  overflow-y: auto;
+}
+.redemption-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #dce4dc;
+  padding: 20px 0;
+  margin-top: 20px;
+}
+.redemption-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+.redemption-checkout form > p {
+  margin-bottom: 18px;
+}
+.redemption-options .product-price small {
+  margin-left: 6px;
+}
+@media (max-width: 800px) {
+  .points-store .points-mall-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .points-store .points-heading {
+    align-items: flex-start;
+  }
+  .points-balance-card {
+    min-width: 175px;
+  }
+}
+@media (max-width: 520px) {
+  .points-store {
+    padding: 16px !important;
+  }
+  .points-store .points-heading {
+    display: grid;
+    gap: 18px;
+  }
+  .points-balance-card {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .points-store .points-search {
+    gap: 12px;
+  }
+  .points-store .points-search > input {
+    width: 100%;
+    flex-basis: 100%;
+  }
+  .points-store .points-mall-grid {
+    gap: 12px;
+  }
+  .points-store .points-card {
+    padding: 10px;
+  }
+  .points-product-link h2 {
+    font-size: 16px;
+  }
+  .points-store .points-card > strong {
+    font-size: 17px;
+  }
+  .redemption-actions {
+    flex-wrap: wrap;
+  }
+  .redemption-actions .btn {
+    flex: 1;
+  }
+}
+/* Keep checkout above the consent notice and inside the viewport even when
+   public-page typography/layout rules override utility classes. */
+body:has(.redemption-checkout[data-open]) [data-slot="dialog-overlay"] {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: #14221966;
+}
+.redemption-checkout[data-slot="dialog-content"] {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  transform: none;
+  z-index: 101;
+  box-sizing: border-box;
+  height: auto;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: #fff;
+  color: #293f31;
+  padding: 24px;
+  border: 1px solid #dce4dc;
+  border-radius: 16px;
+}
+.redemption-checkout [data-slot="dialog-close"] { position:absolute;top:12px;right:12px; }
+.redemption-checkout [data-slot="dialog-header"] { padding-right:32px; }
+.redemption-checkout form { min-width:0; }
+.redemption-checkout .field-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px; }
+.redemption-checkout input,.redemption-checkout select { max-width:100%;box-sizing:border-box; }
+@media(max-width:520px) {
+  .redemption-checkout[data-slot="dialog-content"] { padding:20px 16px; }
+  .redemption-checkout .field-grid { grid-template-columns:1fr; }
+}
+.redemption-checkout .field { display:grid;gap:7px;margin:0 0 14px;min-width:0;font-size:14px; }
+.redemption-checkout .field input,.redemption-checkout .field select { width:100%;min-width:0;min-height:42px;padding:10px 12px;border:1px solid #d5ded5;border-radius:8px;background:white;color:inherit;font:inherit; }
+.redemption-checkout .required-mark { color:#d43b36;margin-right:5px; }

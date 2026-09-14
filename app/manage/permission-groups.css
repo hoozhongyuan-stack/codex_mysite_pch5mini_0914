@@ -1,0 +1,11 @@
+.permission-workspace .permission-tabs{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
+.permission-workspace .permission-table{overflow-x:auto}
+.permission-workspace table{width:100%;border-collapse:collapse;text-align:left;font-size:13px}
+.permission-workspace th,.permission-workspace td{padding:12px;border-bottom:1px solid #ececf2;vertical-align:top}
+.permission-workspace td small{display:block;color:#737386;margin-top:4px}
+.permission-workspace .permission-editor{margin-top:16px;max-width:920px}
+.permission-workspace fieldset{border:1px solid #e5e5ec;border-radius:8px;padding:14px;margin:14px 0}
+.permission-workspace .permission-checks{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.permission-workspace .permission-checks label,.permission-workspace .permission-toggle{display:flex;align-items:center;gap:8px;font-size:13px}
+.permission-workspace input[type=checkbox]{width:16px;height:16px;flex:none;margin:0}
+.permission-workspace pre{max-width:400px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}

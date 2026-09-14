@@ -1,0 +1,22 @@
+[Unit]
+Description=Aition UAT video worker
+After=network.target postgresql.service
+[Service]
+User=aition
+Group=aition
+WorkingDirectory=/srv/aition/current/identity
+EnvironmentFile=/etc/aition/identity.env
+ExecStart=/srv/aition/venv/bin/python manage.py video_worker
+CPUQuota=100%
+MemoryMax=750M
+Nice=10
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/aition/shared
+[Install]
+WantedBy=multi-user.target

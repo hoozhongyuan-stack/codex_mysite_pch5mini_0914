@@ -1,0 +1,144 @@
+diff --git a/dist/fromFile.cjs b/dist/fromFile.cjs
+index c226d3dac07f235db456c774b26cca88f655e1af..23959184936374abe2595dd7994d6259b755bd6d 100644
+--- a/dist/fromFile.cjs
++++ b/dist/fromFile.cjs
+@@ -994,7 +994,8 @@ var globalOptions = {
+ function imageSize(input) {
+   const type = detector(input);
+   if (typeof type !== "undefined") {
+-    if (globalOptions.disabledTypes.indexOf(type) > -1) {
++    // Deny vulnerable formats before parsing, including after disableTypes([]).
++    if (["heif", "icns", "jxl", "jxl-stream"].includes(type) || globalOptions.disabledTypes.indexOf(type) > -1) {
+       throw new TypeError(`disabled file type: ${type}`);
+     }
+     const size = typeHandlers.get(type).calculate(input);
+diff --git a/dist/fromFile.mjs b/dist/fromFile.mjs
+index 4a3c44432982397204f7a9d04fc66ef65a8e7ba4..0ddfcb5dd5493b30935f947c0f2371bf22395e69 100644
+--- a/dist/fromFile.mjs
++++ b/dist/fromFile.mjs
+@@ -971,7 +971,8 @@ var globalOptions = {
+ function imageSize(input) {
+   const type = detector(input);
+   if (typeof type !== "undefined") {
+-    if (globalOptions.disabledTypes.indexOf(type) > -1) {
++    // Deny vulnerable formats before parsing, including after disableTypes([]).
++    if (["heif", "icns", "jxl", "jxl-stream"].includes(type) || globalOptions.disabledTypes.indexOf(type) > -1) {
+       throw new TypeError(`disabled file type: ${type}`);
+     }
+     const size = typeHandlers.get(type).calculate(input);
+diff --git a/dist/index.cjs b/dist/index.cjs
+index bde0210eb131db06ccca30a5c466c7252a03af50..e6c0e9fdc5daf3f972e3d96ebbf021c3003feedc 100644
+--- a/dist/index.cjs
++++ b/dist/index.cjs
+@@ -970,7 +970,8 @@ var globalOptions = {
+ function imageSize(input) {
+   const type = detector(input);
+   if (typeof type !== "undefined") {
+-    if (globalOptions.disabledTypes.indexOf(type) > -1) {
++    // Deny vulnerable formats before parsing, including after disableTypes([]).
++    if (["heif", "icns", "jxl", "jxl-stream"].includes(type) || globalOptions.disabledTypes.indexOf(type) > -1) {
+       throw new TypeError(`disabled file type: ${type}`);
+     }
+     const size = typeHandlers.get(type).calculate(input);
+diff --git a/dist/index.mjs b/dist/index.mjs
+index 22c17afad4e406eba013fff7858366cb5f8e3ba4..5d8d775684d6a205adc22914700a3908ef3f0f90 100644
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -966,7 +966,8 @@ var globalOptions = {
+ function imageSize(input) {
+   const type = detector(input);
+   if (typeof type !== "undefined") {
+-    if (globalOptions.disabledTypes.indexOf(type) > -1) {
++    // Deny vulnerable formats before parsing, including after disableTypes([]).
++    if (["heif", "icns", "jxl", "jxl-stream"].includes(type) || globalOptions.disabledTypes.indexOf(type) > -1) {
+       throw new TypeError(`disabled file type: ${type}`);
+     }
+     const size = typeHandlers.get(type).calculate(input);
+diff --git a/dist/types/heif.cjs b/dist/types/heif.cjs
+index 1f490788ea654ea9896060a5c0253d81e348af92..e8ffe403e2b9bc046e103139026ea85e09d56983 100644
+--- a/dist/types/heif.cjs
++++ b/dist/types/heif.cjs
+@@ -47,6 +47,7 @@ var HEIF = {
+     return brand in brandMap;
+   },
+   calculate(input) {
++    throw new TypeError("disabled file type: vulnerable format blocked by site policy");
+     const metaBox = findBox(input, "meta", 0);
+     const iprpBox = metaBox && findBox(input, "iprp", metaBox.offset + 12);
+     const ipcoBox = iprpBox && findBox(input, "ipco", iprpBox.offset + 8);
+diff --git a/dist/types/heif.mjs b/dist/types/heif.mjs
+index 01330919e01b3c034a96a7b4b1dbf5a7f658bb2d..0930761285ebe40e5ee6c12b79e3648faac00c98 100644
+--- a/dist/types/heif.mjs
++++ b/dist/types/heif.mjs
+@@ -45,6 +45,7 @@ var HEIF = {
+     return brand in brandMap;
+   },
+   calculate(input) {
++    throw new TypeError("disabled file type: vulnerable format blocked by site policy");
+     const metaBox = findBox(input, "meta", 0);
+     const iprpBox = metaBox && findBox(input, "iprp", metaBox.offset + 12);
+     const ipcoBox = iprpBox && findBox(input, "ipco", iprpBox.offset + 8);
+diff --git a/dist/types/icns.cjs b/dist/types/icns.cjs
+index 32c8d370dcf80a10f14a6deebfdbe04d3c70585c..652321bc60847aac022936aafbcc7e3289f9727e 100644
+--- a/dist/types/icns.cjs
++++ b/dist/types/icns.cjs
+@@ -66,6 +66,7 @@ function getImageSize(type) {
+ var ICNS = {
+   validate: (input) => toUTF8String(input, 0, 4) === "icns",
+   calculate(input) {
++    throw new TypeError("disabled file type: vulnerable format blocked by site policy");
+     const inputLength = input.length;
+     const fileLength = readUInt32BE(input, FILE_LENGTH_OFFSET);
+     let imageOffset = SIZE_HEADER;
+diff --git a/dist/types/icns.mjs b/dist/types/icns.mjs
+index 8710027bc5890a79d05a7fdb87de3018e556729e..badccdacdfcb0bf746bae8b350225c1d324b133b 100644
+--- a/dist/types/icns.mjs
++++ b/dist/types/icns.mjs
+@@ -64,6 +64,7 @@ function getImageSize(type) {
+ var ICNS = {
+   validate: (input) => toUTF8String(input, 0, 4) === "icns",
+   calculate(input) {
++    throw new TypeError("disabled file type: vulnerable format blocked by site policy");
+     const inputLength = input.length;
+     const fileLength = readUInt32BE(input, FILE_LENGTH_OFFSET);
+     let imageOffset = SIZE_HEADER;
+diff --git a/dist/types/jxl.cjs b/dist/types/jxl.cjs
+index a12095be85c7a8fd25763895a47c46b4292ebd9c..427bc91adb3a1d1bf868814fa1138e7e3f8df325 100644
+--- a/dist/types/jxl.cjs
++++ b/dist/types/jxl.cjs
+@@ -89,6 +89,7 @@ var JXLStream = {
+     return toHexString(input, 0, 2) === "ff0a";
+   },
+   calculate(input) {
++    throw new TypeError("disabled file type: vulnerable format blocked by site policy");
+     const reader = new BitReader(input, "little-endian");
+     const isSmallImage = reader.getBits(1) === 1;
+     const height = calculateImageDimension(reader, isSmallImage);
+@@ -146,6 +147,7 @@ var JXL = {
+     return brand === "jxl ";
+   },
+   calculate(input) {
++    throw new TypeError("disabled file type: vulnerable format blocked by site policy");
+     const codestream = extractCodestream(input);
+     if (codestream) return JXLStream.calculate(codestream);
+     throw new Error("No codestream found in JXL container");
+diff --git a/dist/types/jxl.mjs b/dist/types/jxl.mjs
+index 49b0c4cac6abb366378e5feed745f16981b441c0..6564df377db84c6bfff56a94032fa10ab291419f 100644
+--- a/dist/types/jxl.mjs
++++ b/dist/types/jxl.mjs
+@@ -87,6 +87,7 @@ var JXLStream = {
+     return toHexString(input, 0, 2) === "ff0a";
+   },
+   calculate(input) {
++    throw new TypeError("disabled file type: vulnerable format blocked by site policy");
+     const reader = new BitReader(input, "little-endian");
+     const isSmallImage = reader.getBits(1) === 1;
+     const height = calculateImageDimension(reader, isSmallImage);
+@@ -144,6 +145,7 @@ var JXL = {
+     return brand === "jxl ";
+   },
+   calculate(input) {
++    throw new TypeError("disabled file type: vulnerable format blocked by site policy");
+     const codestream = extractCodestream(input);
+     if (codestream) return JXLStream.calculate(codestream);
+     throw new Error("No codestream found in JXL container");

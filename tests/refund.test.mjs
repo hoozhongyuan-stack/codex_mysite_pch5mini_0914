@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {refundQuote} from '../lib/refund-domain.mjs';
+const order={shipping:50,data:{},items:[{id:'a',quantity:2,unit_price:100,snapshot:{rewardPoints:10}},{id:'b',quantity:1,unit_price:200,snapshot:{rewardPoints:30}}]};
+test('partial refund uses item quantity and returns shipping only on last refund',()=>{const first=refundQuote(order,[{id:'a',quantity:1}]);assert.equal(first.amount,100);assert.equal(first.points,10);assert.equal(first.full,false);const last=refundQuote({...order,data:{refundedItems:first.totals}});assert.equal(last.amount,350);assert.equal(last.points,40);assert.equal(last.full,true)});
+test('refund rejects duplicate, unknown and excessive quantities',()=>{for(const items of [[{id:'a',quantity:3}],[{id:'x',quantity:1}],[{id:'a',quantity:1},{id:'a',quantity:1}],[{id:'a',quantity:0}]])assert.throws(()=>refundQuote(order,items))});

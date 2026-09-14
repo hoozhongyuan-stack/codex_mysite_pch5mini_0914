@@ -1,0 +1,7 @@
+import {database} from './server';
+
+// Shared visitor projection: never send private inventory or member data.
+export async function publicPoints(q='') {
+    const rows=(await database().prepare("SELECT id,slug,data,(SELECT COALESCE(SUM(i.quantity),0) FROM order_items i JOIN orders o ON o.id=i.order_id WHERE i.product_id=contents.id AND o.currency='PTS' AND o.status<>'closed') AS used,(SELECT COALESCE(SUM(i.quantity),0) FROM order_items i JOIN orders o ON o.id=i.order_id WHERE i.product_id=contents.id AND o.paid=0 AND o.status IN ('building','pending_payment','pending_review')) AS reserved FROM contents WHERE kind='products' AND status='published' AND COALESCE(json_extract(data,'$.channels.website'),1)=1 AND json_extract(data,'$.trade.redemptionEnabled')=1 ORDER BY COALESCE(json_extract(data,'$.trade.redemptionSort'),0),updated_at DESC").all<any>()).results;
+    return rows.map((r:any)=>{const d=JSON.parse(r.data); return {id:r.id,slug:r.slug,titleZh:d.titleZh,titleEn:d.titleEn,spu:d.spu,limit:d.trade?.redemptionLimit || 0,remainingQuota:Math.max(0,(d.trade?.redemptionQuota || 0)-r.used),soldOut: !Number.isInteger(d.trade?.inventory) || d.trade.inventory-r.reserved<=0 || d.trade.redemptionQuota-r.used<=0,imageId:d.imageId || d.imageIds?.[0],variants:(d.trade?.variants || []).filter((v:any)=>v.enabled && v.pointsPrice),specs:d.trade?.specs || []};}).filter((r:any)=>(r.titleZh+' '+r.titleEn+' '+r.spu).toLowerCase().includes(q.toLowerCase()));
+}

@@ -1,0 +1,19 @@
+[Unit]
+Description=Aition UAT website
+After=network.target postgresql.service aition-identity.service
+[Service]
+User=aition
+Group=aition
+WorkingDirectory=/srv/aition/current/web
+EnvironmentFile=/etc/aition/web.env
+ExecStart=/usr/local/bin/node server.js
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/aition/shared
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,144 @@
+/* Compact desktop workspace. Public pages never match this scope. */
+.admin-workspace { font-size: 14px; line-height: 1.5; }
+.admin-workspace .admin-header { height: 56px; min-height: 56px; padding: 0 24px; }
+.admin-workspace .workspace { max-width: none; padding: 22px 24px; }
+.admin-workspace [data-sidebar=header] { padding: 20px 16px; }
+.admin-workspace [data-sidebar=content] { padding: 0 12px; }
+.admin-workspace [data-sidebar=footer] { padding: 10px 12px; gap: 2px; }
+.admin-workspace .brand { font-size: 20px; gap: 8px; }
+.admin-workspace .brand small { font-size: 10px; letter-spacing: 1.5px; }
+.admin-workspace .brand-icon { width: 30px; height: 32px; border-radius: 8px; }
+.admin-workspace .workspace-menu { gap: 3px; padding-bottom: 10px; }
+.admin-workspace .menu-group { min-height: 36px; padding: 8px 10px; gap: 8px; font-size: 14px; }
+.admin-workspace .menu-children { padding: 2px 0 4px 16px; }
+.admin-workspace .menu-children .nav-item { min-height: 32px; padding: 6px 10px; margin: 1px 0; font-size: 13px; }
+.admin-workspace .nav-item { padding: 7px 10px; gap: 8px; margin: 1px 0; font-size: 13px; }
+.admin-workspace .heading-row { gap: 12px; margin-bottom: 16px; }
+.admin-workspace .heading-row h1 { font-size: 23px; letter-spacing: -.4px; margin-bottom: 3px; }
+.admin-workspace .heading-row h2 { font-size: 20px; }
+.admin-workspace .muted { font-size: 12px; line-height: 1.5; }
+.admin-workspace .btn { min-height: 34px; padding: 6px 12px; gap: 6px; font-size: 13px; border-radius: 6px; }
+.admin-workspace .flex-actions { gap: 6px; }
+.admin-workspace .panel { border-radius: 9px; }
+.admin-workspace .section-head { padding: 14px 16px; gap: 12px; }
+.admin-workspace .section-head h2 { font-size: 15px; }
+.admin-workspace .callout { padding: 14px 16px; margin-bottom: 16px; border-radius: 9px; }
+.admin-workspace .stats { gap: 12px; margin-bottom: 16px; }
+.admin-workspace .stat { padding: 16px; }
+.admin-workspace .stat-value { font-size: 28px; margin: 8px 0 3px; }
+.admin-workspace .dashboard-grid { gap: 16px; margin-bottom: 16px; }
+.admin-workspace .check-row { padding: 10px 16px; font-size: 13px; }
+.admin-workspace .list-filters { padding: 12px 16px; gap: 8px 10px; }
+.admin-workspace .list-filters label { gap: 4px; min-width: 120px; flex: 1 1 120px; font-size: 12px; }
+.admin-workspace .list-filters input, .admin-workspace .list-filters select,
+.admin-workspace .list-pager input, .admin-workspace .list-pager select { height: 34px; min-height: 34px; padding: 5px 9px; font-size: 13px; width: 100%; }
+.admin-workspace .list-filters .btn { flex: 0 0 auto; }
+.admin-workspace .list-batch { padding: 8px 16px; gap: 8px; font-size: 12px; }
+.admin-workspace .list-table { font-size: 13px; }
+.admin-workspace .list-table th, .admin-workspace .list-table td { padding: 9px 12px; vertical-align: middle; }
+.admin-workspace .list-table th { font-size: 12px; padding-top: 10px; padding-bottom: 10px; }
+.admin-workspace .list-table small { margin-top: 3px; font-size: 11px; line-height: 1.35; }
+.admin-workspace .list-table .title-link { font-weight: 600; text-align: left; }
+.admin-workspace .list-table .flex-actions { min-width: 190px; gap: 4px; }
+.admin-workspace .list-table .btn { min-height: 28px; padding: 3px 6px; font-size: 12px; }
+.admin-workspace .list-table td:first-child, .admin-workspace .list-table th:first-child { padding-right: 6px; }
+.admin-workspace .list-pager { padding: 10px 16px; gap: 8px; font-size: 12px; }
+.admin-workspace .list-pager select { width: 104px; }
+.admin-workspace .list-pager input { width: 60px; }
+.admin-workspace .pill { padding: 3px 6px; font-size: 11px; white-space: nowrap; }
+.admin-workspace .notice { padding: 10px 14px; margin: 12px 0; font-size: 13px; line-height: 1.6; }
+.admin-workspace .empty-state { padding: 32px 16px; }
+.admin-workspace .admin-footer { margin-top: 20px; font-size: 11px; }
+.admin-workspace .mall-admin-table th, .admin-workspace .mall-admin-table td { padding: 10px 12px; font-size: 13px; }
+.admin-workspace .mall-product img { width: 44px; height: 44px; }
+.admin-workspace .mall-admin-toolbar { gap: 10px; margin: 14px 0; }
+.admin-workspace .mall-admin-toolbar input { padding: 8px 10px; }
+/* Dialogs are rendered through portals; only opt them in on an active workspace. */
+:is(.admin-workspace, body:has(.admin-workspace) [data-slot=dialog-content]) .field { margin: 10px 0; font-size: 13px; }
+:is(.admin-workspace, body:has(.admin-workspace) [data-slot=dialog-content]) .field > span { margin-bottom: 5px; }
+:is(.admin-workspace, body:has(.admin-workspace) [data-slot=dialog-content]) .field input:not([type=checkbox]):not([type=radio]),
+:is(.admin-workspace, body:has(.admin-workspace) [data-slot=dialog-content]) .field textarea { padding: 7px 10px; font-size: 13px; }
+:is(.admin-workspace, body:has(.admin-workspace) [data-slot=dialog-content]) .field textarea { min-height: 70px; }
+:is(.admin-workspace, body:has(.admin-workspace) [data-slot=dialog-content]) .field [data-slot=select-trigger] { height: 34px !important; font-size: 13px; }
+:is(.admin-workspace, body:has(.admin-workspace) [data-slot=dialog-content]) .field-grid { gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+body:has(.admin-workspace) .editor-dialog { width: calc(100vw - 48px); max-width: 1200px !important; max-height: 92dvh; padding: 20px !important; gap: 12px; }
+body:has(.admin-workspace) .editor-dialog [data-slot=dialog-header] { padding-right: 28px; }
+body:has(.admin-workspace) .admin-content-editor { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(300px, 1fr); gap: 0 20px; align-items: start; }
+body:has(.admin-workspace) .admin-content-editor > .error { grid-column: 1 / -1; }
+body:has(.admin-workspace) .editor-content-column, body:has(.admin-workspace) .editor-settings-column { min-width: 0; }
+body:has(.admin-workspace) .editor-settings-column { padding: 0 16px 12px; background: #faf9fc; border: 1px solid #eeebf3; border-radius: 8px; }
+body:has(.admin-workspace) .editor-save-actions { grid-column: 1 / -1; position: sticky; bottom: -20px; z-index: 2; justify-content: flex-end; margin: 16px -20px -20px; padding: 12px 20px; background: white; border-top: 1px solid #e8e8ee; }
+body:has(.admin-workspace) .editor-dialog .btn { padding: 6px 10px; min-height: 34px; font-size: 13px; }
+body:has(.admin-workspace) .editor-dialog .gallery-editor { gap: 8px; }
+body:has(.admin-workspace) .editor-dialog .gallery-editor img { width: 76px; height: 76px; object-fit: cover; }
+body:has(.admin-workspace) .editor-dialog .rich-edit-surface { min-height: 240px; padding: 12px; }
+@media (max-width: 1000px) {
+  body:has(.admin-workspace) .admin-content-editor { grid-template-columns: 1fr; }
+  body:has(.admin-workspace) .editor-settings-column { margin-top: 12px; }
+  .admin-workspace .list-table { min-width: 900px; }
+}
+@media (max-width: 760px) {
+  .admin-workspace .workspace { padding: 16px; }
+  .admin-workspace .admin-header { padding: 0 16px; }
+  .admin-workspace .heading-row { flex-wrap: wrap; }
+  .admin-workspace .btn { min-height: 40px; }
+  .admin-workspace .list-filters label { flex-basis: calc(50% - 10px); min-width: 0; }
+  .admin-workspace .field-grid, body:has(.admin-workspace) .editor-dialog .field-grid { grid-template-columns: 1fr; }
+  body:has(.admin-workspace) .editor-dialog { width: calc(100vw - 24px); padding: 16px !important; }
+  body:has(.admin-workspace) .editor-save-actions { margin-left: -16px; margin-right: -16px; bottom: -16px; padding: 12px 16px; }
+}
+.admin-workspace .settings-panel { padding: 18px; max-width: 1120px; }
+.admin-workspace .settings-panel h2 { font-size: 16px; margin-bottom: 12px; }
+.admin-workspace .settings-tabs { gap: 6px; margin-bottom: 16px; padding-bottom: 10px; }
+.admin-workspace .settings-content .settings-save { padding: 10px 0; gap: 10px; }
+.admin-workspace .brand-upload, .admin-workspace .brand-live-preview { padding: 16px; }
+.admin-workspace .video-table { font-size: 13px; }
+.admin-workspace .video-table th, .admin-workspace .video-table td { padding: 10px 12px; }
+.admin-workspace .video-table th, .admin-workspace .video-table small { font-size: 12px; }
+.admin-workspace .video-table small { margin-top: 3px; }
+.admin-workspace .video-table-thumb { width: 64px; height: 40px; }
+.admin-workspace .video-title-cell { gap: 10px; }
+.admin-workspace .video-admin .panel { padding: 14px 16px; }
+.admin-workspace .video-admin .field-grid { margin: 12px 0; }
+.admin-workspace .marketing-activity-grid { gap: 16px; margin-top: 16px; }
+.admin-workspace .marketing-activity { padding: 18px; }
+.admin-workspace .marketing-activity h2 { font-size: 17px; margin: 12px 0 6px; }
+.admin-workspace .marketing-activity p { font-size: 13px; margin: 6px 0 14px; }
+.admin-workspace .channel-settings > .panel { padding: 18px; }
+.admin-workspace .channel-settings h1 { font-size: 23px; }
+.admin-workspace .channel-settings h2 { font-size: 18px; margin: 0 0 16px; }
+.admin-workspace .channel-settings h3 { font-size: 15px; margin: 16px 0 10px; }
+.admin-workspace .channel-settings .field-grid { gap: 12px; }
+.admin-workspace .channel-settings label { font-size: 13px; }
+.admin-workspace .channel-settings label.field { gap: 5px; }
+.admin-workspace .channel-settings .mini-tab { padding: 10px 14px; font-size: 13px; }
+.admin-workspace .channel-settings .mini-section { margin-top: 18px; padding-top: 8px; }
+.admin-workspace .channel-settings .panel .panel { margin-bottom: 16px; }
+.admin-workspace .hotspot-editor { padding: 16px; margin-top: 12px; }
+.admin-workspace .hotspot-columns { gap: 16px; margin-top: 14px; }
+.admin-workspace .hotspot-properties details { padding: 10px 12px; margin-bottom: 8px; }
+.admin-workspace .mini-check-grid { gap: 12px; margin-bottom: 16px; }
+.admin-workspace .mini-check-grid > div { padding: 16px; }
+.admin-workspace .mini-check-grid strong { font-size: 18px; margin: 6px 0; }
+.admin-workspace .mini-section-actions, .admin-workspace .mini-save-bar { padding: 10px 16px; margin-top: 12px; gap: 10px; }
+body:has(.admin-workspace) .admin-content-editor.editor-form-layout { grid-template-columns: 1fr; }
+body:has(.admin-workspace) .editor-form-layout .editor-settings-column { margin-top: 12px; }
+/* V2.5.2: keep native numeric semantics while removing visual steppers. */
+:is(.admin-workspace, body:has(.admin-workspace) [data-slot=dialog-content]) input[type=number] { appearance: textfield; -moz-appearance: textfield; }
+:is(.admin-workspace, body:has(.admin-workspace) [data-slot=dialog-content]) input[type=number]::-webkit-inner-spin-button,
+:is(.admin-workspace, body:has(.admin-workspace) [data-slot=dialog-content]) input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+:is(.admin-workspace, body:has(.admin-workspace) [data-slot=dialog-content]) .field > span > .required-mark { display: inline; margin-right: 4px; color: #b42335; }
+:is(.admin-workspace, body:has(.admin-workspace) [data-slot=dialog-content]) input:is([type=checkbox],[type=radio]) { width: 16px; height: 16px; min-width: 16px; padding: 0; flex: 0 0 16px; vertical-align: middle; }
+body:has(.admin-workspace) .editor-channel-choices label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+body:has(.admin-workspace) .editor-channel-choices { gap: 10px 16px; }
+body:has(.admin-workspace) .editor-publish-fields { display: block; }
+body:has(.admin-workspace) .editor-group-title { font-size: 14px; font-weight: 650; margin: 16px 0 8px; padding-top: 12px; border-top: 1px solid #e8e5ef; }
+body:has(.admin-workspace) .editor-group-title:first-child { padding-top: 0; border-top: 0; }
+body:has(.admin-workspace) .editor-trade-section { grid-column: 1 / -1; min-width: 0; }
+body:has(.admin-workspace) .editor-trade-section:empty { display: none; }
+body:has(.admin-workspace) .editor-trade-section .product-options-editor { margin: 16px 0 0; padding: 16px; }
+body:has(.admin-workspace) .editor-dialog .rich-edit-surface { min-height: 200px; max-height: 340px; overflow-y: auto; }
+body:has(.admin-workspace) .editor-dialog .editor-content-column textarea { min-height: 68px; height: 76px; }
+body:has(.admin-workspace) .editor-dialog .spec-editor-card { padding: 12px; margin-bottom: 12px; }
+body:has(.admin-workspace) .editor-dialog .spec-row { margin: 8px 0; }
+body:has(.admin-workspace) .editor-dialog .product-options-editor .section-head { padding: 10px 0; }

@@ -1,0 +1,11 @@
+CREATE TRIGGER guard_content_asset_insert BEFORE INSERT ON content_assets BEGIN SELECT RAISE(ABORT,'素材不存在') WHERE NOT EXISTS(SELECT 1 FROM assets WHERE id=NEW.asset_id); END;
+--> statement-breakpoint
+CREATE TRIGGER guard_asset_delete BEFORE DELETE ON assets BEGIN SELECT RAISE(ABORT,'素材仍被引用') WHERE EXISTS(SELECT 1 FROM content_assets WHERE asset_id=OLD.id) OR EXISTS(SELECT 1 FROM contents WHERE json_extract(data,'$.imageId')=OLD.id OR EXISTS(SELECT 1 FROM json_each(contents.data,'$.imageIds') WHERE value=OLD.id)) OR EXISTS(SELECT 1 FROM settings WHERE json_extract(data,'$.footer.logoId')=OLD.id OR EXISTS(SELECT 1 FROM json_each(settings.data,'$.footer.socials') WHERE json_extract(value,'$.imageId')=OLD.id)); END;
+--> statement-breakpoint
+CREATE TRIGGER guard_asset_folder_insert BEFORE INSERT ON asset_folders_map BEGIN SELECT RAISE(ABORT,'素材或文件夹不存在') WHERE NOT EXISTS(SELECT 1 FROM assets WHERE id=NEW.asset_id) OR NOT EXISTS(SELECT 1 FROM asset_folders WHERE id=NEW.folder_id); END;
+--> statement-breakpoint
+CREATE TRIGGER guard_asset_folder_update BEFORE UPDATE ON asset_folders_map BEGIN SELECT RAISE(ABORT,'素材或文件夹不存在') WHERE NOT EXISTS(SELECT 1 FROM assets WHERE id=NEW.asset_id) OR NOT EXISTS(SELECT 1 FROM asset_folders WHERE id=NEW.folder_id); END;
+--> statement-breakpoint
+CREATE TRIGGER guard_footer_insert BEFORE INSERT ON settings BEGIN SELECT RAISE(ABORT,'页脚图片不存在') WHERE (COALESCE(json_extract(NEW.data,'$.footer.logoId'),'')<>'' AND NOT EXISTS(SELECT 1 FROM assets WHERE id=json_extract(NEW.data,'$.footer.logoId'))) OR EXISTS(SELECT 1 FROM json_each(NEW.data,'$.footer.socials') s WHERE COALESCE(json_extract(s.value,'$.imageId'),'')<>'' AND NOT EXISTS(SELECT 1 FROM assets WHERE id=json_extract(s.value,'$.imageId'))); END;
+--> statement-breakpoint
+CREATE TRIGGER guard_footer_update BEFORE UPDATE ON settings BEGIN SELECT RAISE(ABORT,'页脚图片不存在') WHERE (COALESCE(json_extract(NEW.data,'$.footer.logoId'),'')<>'' AND NOT EXISTS(SELECT 1 FROM assets WHERE id=json_extract(NEW.data,'$.footer.logoId'))) OR EXISTS(SELECT 1 FROM json_each(NEW.data,'$.footer.socials') s WHERE COALESCE(json_extract(s.value,'$.imageId'),'')<>'' AND NOT EXISTS(SELECT 1 FROM assets WHERE id=json_extract(s.value,'$.imageId'))); END;

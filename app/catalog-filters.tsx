@@ -1,0 +1,3 @@
+'use client';
+import {useState} from 'react';
+export default function CatalogFilters({children,en}:any){const [open,setOpen]=useState(false);return <div className={'catalog-filters '+(open?'filters-open':'')}><button className="btn catalog-filter-toggle" aria-expanded={open} onClick={()=>setOpen(!open)}>{en?'Categories & filters':'分类与筛选'}</button><div className="catalog-filter-sheet"><div className="catalog-filter-title"><strong>{en?'Categories & filters':'分类与筛选'}</strong><button type="button" className="btn" onClick={()=>setOpen(false)}>{en?'Close':'关闭'}</button></div>{children}</div>{open&&<button className="catalog-filter-backdrop" aria-label={en?'Close filters':'关闭筛选'} onClick={()=>setOpen(false)}/>}</div>}
