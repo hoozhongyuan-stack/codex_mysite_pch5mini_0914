@@ -1,13 +1,14 @@
 import {ActionText,ActionButton,ActionView,ActionInput} from './interaction';
 import { useState, useEffect, useRef } from 'react';
 import Taro, { useDidShow } from '@tarojs/taro';
-import { View, Text, Input, Button, Switch, Checkbox, CheckboxGroup } from '@tarojs/components';
-import { request, saveSession, clearSession, token } from '../lib/api';
+import { View, Text, Image, Switch, Checkbox, CheckboxGroup } from '@tarojs/components';
+import { origin, request, saveSession, clearSession, token } from '../lib/api';
 import {loginResult} from '../lib/response.mjs';
+import {privacyChoice} from '../lib/behavior';
 import MemberOverview from './member-overview';
-import {orderLabel,amountLabel} from '../lib/member.mjs';
+import {orderLabel,amountLabel,hasMiniWechatBinding} from '../lib/member.mjs';
 const base = '/api/mini/member/';
-export default function Account({initialScreen='overview',embedded=false,onShop,initialFilter=''}: {initialScreen?:string;embedded?:boolean;onShop?:()=>void;initialFilter?:string}) {
+export default function Account({initialScreen='overview',embedded=false,onShop,initialFilter='',returnTo=''}: {initialScreen?:string;embedded?:boolean;onShop?:()=>void;initialFilter?:string;returnTo?:string}) {
   const [screen,setScreen]=useState(initialScreen),
     [orderFilter,setOrderFilter]=useState(initialFilter),
     [user, setUser] = useState<any>(null),
@@ -22,7 +23,11 @@ export default function Account({initialScreen='overview',embedded=false,onShop,
     [total, setTotal] = useState(0),
     [rows, setRows] = useState<any[]>([]),
     [points, setPoints] = useState<any>(null),
-    [editing, setEditing] = useState<any>(null);
+    [editing, setEditing] = useState<any>(null),
+    [nickname, setNickname] = useState(''),
+    [avatarUrl, setAvatarUrl] = useState(''),
+    [sessionLoading, setSessionLoading] = useState(Boolean(token())),
+    [phoneHint, setPhoneHint] = useState('');
   const returnAfterLogin=useRef(initialScreen==='login');
   const intended=useRef(initialScreen==='login'?'overview':initialScreen);
   const agreed = useRef(false);
@@ -38,10 +43,21 @@ export default function Account({initialScreen='overview',embedded=false,onShop,
       const balance=await request(base+'points');
       if(seq!==loadingSession.current || token()!==session)return;
       setUser(profile.user);setPoints(balance);
+      setNickname(profile.user?.nickname || '');
     } catch(e){if(seq===loadingSession.current){setError((e as Error).message);if(!token()){setUser(null);setPoints(null);}}}
+    finally {if(seq===loadingSession.current)setSessionLoading(false);}
   }
   useDidShow(()=>{void load();});
   useEffect(()=>{void load();return ()=>{loadingSession.current++}},[]);
+  useEffect(()=>{
+    const id=user?.avatarId;
+    if(!id){setAvatarUrl('');return;}
+    let live=true;
+    Taro.downloadFile({url:origin+base+'avatar?id='+encodeURIComponent(id),header:{Authorization:'Bearer '+token()}})
+      .then(result=>{if(live&&result.statusCode===200)setAvatarUrl(result.tempFilePath)})
+      .catch(()=>{if(live)setAvatarUrl('')});
+    return ()=>{live=false};
+  },[user?.avatarId]);
   function failure(e:unknown){
     setError((e as Error).message);
     if(!token() && user){setUser(null);setPoints(null);setRows([]);setEditing(null);intended.current=screen;setScreen('login');}
@@ -100,6 +116,37 @@ export default function Account({initialScreen='overview',embedded=false,onShop,
       void load();
     });
   }
+  async function saveProfile(nextAvatarId=user?.avatarId||'') {
+    await run(async()=>{
+      const result=await request(base+'profile',{nickname,avatarId:nextAvatarId});
+      setUser(result.user);setNickname(result.user?.nickname||'');
+      await Taro.showToast({title:'资料已保存',icon:'success'});
+    });
+  }
+  async function chooseAvatar(event:any) {
+    const path=event?.detail?.avatarUrl;
+    if(!path) return;
+    await run(async()=>{
+      const session=token();
+      const uploaded=await Taro.uploadFile({url:origin+base+'avatar-upload',filePath:path,name:'file',header:{Authorization:'Bearer '+session}});
+      if(token()!==session)throw Error('登录状态已变化，请重新上传');
+      const body=JSON.parse(uploaded.data||'{}');
+      if(uploaded.statusCode<200||uploaded.statusCode>=300)throw Error(body.error||'头像上传失败');
+      const result=await request(base+'profile',{nickname,avatarId:body.id},session);
+      setUser(result.user);setNickname(result.user?.nickname||'');
+      await Taro.showToast({title:'头像已更新',icon:'success'});
+    });
+  }
+  async function getPhone(event:any) {
+    const code=event?.detail?.code;
+    if(!code){setPhoneHint(event?.detail?.errMsg?.includes('deny')?'你已取消手机号授权，可稍后再次授权':'微信未返回手机号授权凭证，请在微信真机重新授权');return;}
+    await run(async()=>{
+      const result=await request(base+'phone',{code});
+      setUser(result.user);
+      setPhoneHint('');
+      await Taro.showToast({title:'手机号已绑定',icon:'success'});
+    });
+  }
   const consent = (
       <View className="consent">
         <CheckboxGroup onChange={e=>{const checked=e.detail.value.includes('agree');agreed.current=checked;setAgree(checked);setError('');}}><Checkbox value="agree" checked={agree} color="#2e503c">已阅读并同意</Checkbox></CheckboxGroup>
@@ -122,42 +169,22 @@ export default function Account({initialScreen='overview',embedded=false,onShop,
         );})}
       </View>
 );
-  const open=(next:string,filter='')=>{if(embedded){void Taro.navigateTo({url:'/pages/account/index?section='+next+'&status='+filter});return;}setError('');setEditing(null);setRows([]);setTotal(0);setOrderFilter(filter);setPage(1);setTab(next);if(!user){intended.current=next;setScreen('login')}else setScreen(next)};
-  if(screen==='overview')return <View className="content">{!embedded&&<Text className='page-title'>个人中心</Text>}{error&&<View className="notice">{error}</View>}<MemberOverview user={user} points={points} onOpen={open} onLogin={()=>{void Taro.navigateTo({url:'/pages/login/index'})}} onShop={onShop||(()=>Taro.redirectTo({url:'/pages/index/index?target=points'}))}/></View>;
+  const open=(next:string,filter='')=>{if(embedded){void Taro.navigateTo({url:'/pages/account/index?section='+next+'&status='+filter});return;}if(sessionLoading)return;setError('');setEditing(null);setRows([]);setTotal(0);setOrderFilter(filter);setPage(1);setTab(next);if(!user){intended.current=next;setScreen('login')}else setScreen(next)};
+  if(screen==='overview')return <View className="content">{!embedded&&<Text className='page-title'>个人中心</Text>}{error&&<View className="notice">{error}</View>}<MemberOverview user={user} points={points} avatarUrl={avatarUrl} loading={sessionLoading} onOpen={open} onLogin={()=>{if(!sessionLoading)void Taro.navigateTo({url:'/pages/login/index'})}} onShop={onShop||(()=>Taro.redirectTo({url:'/pages/index/index?target=points'}))}/></View>;
   return (
     <View className="content"><ActionText className="member-back" onClick={()=>{if(Taro.getCurrentPages().length>1){void Taro.navigateBack()}else void Taro.redirectTo({url:'/pages/index/index?target=account'})}}>‹ {screen==='login'?'继续浏览':'个人中心'}</ActionText>
       <Text className="page-title">{!user?'登录账号':({orders:'我的订单',points:'我的积分',addresses:'我的地址',settings:'账户设置',favorites:'我的收藏',activities:'我的活动',history:'最近观看'} as any)[screen]||'个人中心'}</Text>
       {error && <View className="notice">{error}</View>}
-      {!user ? (
+      {sessionLoading&&token() ? <View className="panel account-loading"><Text>正在核验登录状态…</Text></View> : !user ? (
         <View className="panel login-panel">
-          <Text className="login-intro">登录后查看订单、积分和收货地址</Text>
-          <Text className="login-label">邮箱</Text>
-          <ActionInput
-            className="field-input"
-            value={email}
-            placeholder="已有账号邮箱"
-            onInput={(e) => setEmail(e.detail.value)}
-          />
-          <Text className="login-label">密码</Text>
-          <ActionInput
-            className="field-input"
-            password
-            value={password}
-            placeholder="密码"
-            onInput={(e) => setPassword(e.detail.value)}
-          />
+          <Text className="login-intro">登录后同步订单、积分、收货地址与个人资料</Text>
           {consent}
-          <ActionButton loading={busy} disabled={busy} onClick={() => login(false)}>
-            登录
-          </ActionButton>
-          <Text className="intro">
-            已有网站账号请先登录，再绑定微信，以共用订单及积分。
-          </Text>
-          {status?.enabled && (
-            <ActionButton disabled={busy} onClick={() => login(true)}>
-              微信登录 / 注册
-            </ActionButton>
-          )}
+          {status?.enabled && <ActionButton className="wechat-login" loading={busy} disabled={busy} onClick={() => login(true)}>微信一键登录</ActionButton>}
+          <Text className="login-divider">或使用邮箱登录</Text>
+          <Text className="login-label">邮箱</Text><ActionInput className="field-input" value={email} placeholder="已有账号邮箱" onInput={(e) => setEmail(e.detail.value)} />
+          <Text className="login-label">密码</Text><ActionInput className="field-input" password value={password} placeholder="密码" onInput={(e) => setPassword(e.detail.value)} />
+          <ActionButton loading={busy} disabled={busy} onClick={() => login(false)}>邮箱登录</ActionButton>
+          <Text className="intro">已有网站账号可用邮箱登录；首次微信登录将创建或关联小程序账户。</Text>
         </View>
       ) : (
         <>
@@ -319,9 +346,11 @@ export default function Account({initialScreen='overview',embedded=false,onShop,
                 disabled={busy}
                 onClick={() =>
                   run(async () => {
-                    await request(base + 'address-save', editing);
-                    setEditing(null);
-                    await content();
+                          const created=!editing.id;
+                          await request(base + 'address-save', editing);
+                          setEditing(null);
+                          if(created&&returnTo==='checkout'){await Taro.navigateBack();return;}
+                          await content();
                   })
                 }
               >
@@ -330,8 +359,20 @@ export default function Account({initialScreen='overview',embedded=false,onShop,
               <ActionButton onClick={() => setEditing(null)}>取消</ActionButton>
             </View>
           )}
+          {screen==='settings'&&<View className="panel profile-settings">
+            <Text className="login-intro">账户资料仅用于展示与必要服务；手机号授权后仅显示脱敏号码。</Text>
+            <View className="profile-avatar-row">
+              {avatarUrl?<Image className="profile-avatar" src={avatarUrl} mode="aspectFill"/>:<View className="profile-avatar member-avatar">{(user?.nickname||user?.firstName||'会').slice(0,1)}</View>}
+              <ActionButton openType="chooseAvatar" onChooseAvatar={chooseAvatar} disabled={busy}>更换头像</ActionButton>
+            </View>
+            <Text className="login-label">昵称</Text>
+            <ActionInput className="field-input" type="nickname" value={nickname} maxlength={24} placeholder="设置你的昵称" onInput={e=>setNickname(e.detail.value)}/>
+            <ActionButton loading={busy} disabled={busy} onClick={()=>saveProfile()}>保存资料</ActionButton>
+            <View className="profile-phone-row"><View><Text className="login-label">手机号</Text><Text className="intro">{user?.phoneVerified?(user.phoneMasked+' 已验证'):(status?.enabled?'尚未绑定':'管理员尚未完成微信手机号授权配置')}</Text>{phoneHint&&<Text className="profile-inline-error">{phoneHint}</Text>}</View><ActionButton openType="getPhoneNumber" onGetPhoneNumber={getPhone} disabled={busy||!status?.enabled}>{user?.phoneVerified?'重新授权':status?.enabled?'授权手机号':'暂不可用'}</ActionButton></View>
+            <View className="profile-phone-row"><View><Text className="login-label">匿名使用统计</Text><Text className="intro">可选，用于改善浏览、分享和购物体验。</Text></View><ActionButton size="mini" disabled={busy} onClick={()=>void privacyChoice()}>设置</ActionButton></View>
+          </View>}
           {screen==='settings'&&status?.enabled && consent}
-          {screen==='settings'&&status?.enabled && (
+          {screen==='settings'&&status?.enabled&&!hasMiniWechatBinding(user) && (
             <ActionButton disabled={busy} onClick={() => login(true, true)}>
               绑定当前微信
             </ActionButton>

@@ -22,7 +22,7 @@ export function ActionText(props:ComponentProps<typeof Text>&StateProps){
 }
 export function ActionImage(props:ComponentProps<typeof Image>&StateProps){
   const {disabled,loading,hoverClass,...touch}=useTouchFeedback(props);
-  return <Image {...touch}/>;
+  return <Image {...touch} lazyLoad={props.lazyLoad ?? true}/>;
 }
 export function ActionView({disabled,loading,...props}:ComponentProps<typeof View>&StateProps){
   const state=interactionState({...props,disabled,loading});

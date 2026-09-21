@@ -43,3 +43,14 @@ class AdminUsersTests(TestCase):
         self.assertEqual(self.call('register',{'email':user.email,'firstName':'A','lastName':'B','terms':1,'privacy':1}).status_code,200)
         send.assert_not_called()
         self.assertFalse(Token.objects.filter(user=user).exists())
+
+    def test_phone_review_never_returns_full_number(self):
+        from .models import VisitorState
+        from django.utils import timezone
+        user=User.objects.create_user('review-phone',email='review-phone@example.test',password='Strong-993!')
+        VisitorState.objects.create(user=user,phone_encrypted='ciphertext',phone_digest='a'*64,phone_last4='8000',phone_verified_at=timezone.now())
+        response=self.call('admin-review-user-phone',{'id':user.pk,'status':'approved'},actor='owner@test.example')
+        self.assertEqual(response.status_code,200, response.content.decode())
+        self.assertEqual(response.json()['user']['phoneReviewStatus'],'approved')
+        self.assertNotIn('ciphertext',response.content.decode())
+        self.assertEqual(self.call('admin-review-user-phone',{'id':user.pk,'status':'invalid'},actor='owner@test.example').status_code,400)

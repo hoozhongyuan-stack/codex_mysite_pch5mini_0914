@@ -8,7 +8,8 @@ import subprocess
 import signal
 import uuid
 
-SERVICES = ['aition-expiry.service', 'aition-points.service', 'aition-video.service', 'aition-web.service', 'aition-identity.service']
+BASE_SERVICES = ['aition-expiry.service', 'aition-points.service', 'aition-video.service', 'aition-web.service', 'aition-identity.service']
+OPTIONAL_SERVICES = ['aition-images.service']
 
 
 def run(args):
@@ -23,6 +24,19 @@ def switch(current, target):
 
 def stop_signal(signum, frame):
     raise SystemExit(128 + signum)
+
+
+def installed_services():
+    return [*BASE_SERVICES, *[
+        unit for unit in OPTIONAL_SERVICES
+        if subprocess.run(['systemctl', 'cat', unit], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+    ]]
+
+
+def compatible_services(target):
+    return [*BASE_SERVICES, *(
+        ['aition-images.service'] if (target / 'scripts' / 'image-derivatives-worker.mjs').is_file() else []
+    )]
 
 
 def main():
@@ -53,16 +67,18 @@ def main():
         return
     lock = open('/run/aition-maintenance.lock', 'a')
     fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    active = [unit for unit in SERVICES if subprocess.run(['systemctl', 'is-active', '--quiet', unit]).returncode == 0]
+    managed = installed_services()
+    active = [unit for unit in managed if subprocess.run(['systemctl', 'is-active', '--quiet', unit]).returncode == 0]
+    restartable = [unit for unit in active if unit in compatible_services(target)]
     try:
-        run(['systemctl', 'stop', *SERVICES])
+        run(['systemctl', 'stop', *managed])
         switch(current, target)
-        if active:
-            run(['systemctl', 'start', *reversed(active)])
-            run(['systemctl', 'is-active', '--quiet', *active])
+        if restartable:
+            run(['systemctl', 'start', *reversed(restartable)])
+            run(['systemctl', 'is-active', '--quiet', *restartable])
         print('Release switched. Perform authenticated and business-flow checks before acceptance.')
     except BaseException:
-        run(['systemctl', 'stop', *SERVICES])
+        run(['systemctl', 'stop', *managed])
         switch(current, previous)
         if active:
             run(['systemctl', 'start', *reversed(active)])

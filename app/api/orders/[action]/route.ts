@@ -30,7 +30,7 @@ export async function GET(
     const db = database();
     if (action === 'availability') {
       const c = await commerceConfig();
-      return Response.json({ enabled: c.enabled }, { headers: noCache });
+      return Response.json({ enabled: c.paymentChannels?.offline === true, offline: c.paymentChannels?.offline === true, wechat: false, requestedWechat: c.paymentChannels?.wechat === true }, { headers: noCache });
     }
     let user: any = null;
     if (action.startsWith('admin-'))
@@ -43,7 +43,8 @@ export async function GET(
       const c = await commerceConfig();
       return Response.json(
         {
-          enabled: c.enabled,
+          enabled: c.paymentChannels?.offline === true,
+          paymentChannels: { offline: c.paymentChannels?.offline === true, wechat: false, requestedWechat: c.paymentChannels?.wechat === true },
           shipping: c.shipping,
           timeoutHours: c.timeoutHours,
           afterSaleDays: c.afterSaleDays,

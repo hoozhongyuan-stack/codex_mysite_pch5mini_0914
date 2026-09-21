@@ -6,11 +6,12 @@ import './collections-compact.css';
 import { categoryParentOptions, categoryTreeRows, categoryEditDraft } from '@/lib/category-editor.mjs';
 import {
   Dialog,
+  AdminFormActions,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog';
+} from './admin-dialog';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -455,7 +456,7 @@ export default function Collections({ view, data, reload }: any) {
         )}
       </section>
       <Dialog open={!!edit} onOpenChange={(o) => !o && !busy && setEdit(null)}>
-        <DialogContent className={'collections-dialog ' + (category ? 'category-dialog' : nav ? 'navigation-dialog' : 'collection-basic-dialog')}>
+        <DialogContent size={category || folder ? 'sm' : 'md'} className={'collections-dialog ' + (category ? 'category-dialog' : nav ? 'navigation-dialog' : 'collection-basic-dialog')}>
           <DialogHeader>
             <DialogTitle>
               {names[view]} · {edit?.id || edit?.email ? '编辑' : '新增'}
@@ -592,9 +593,9 @@ export default function Collections({ view, data, reload }: any) {
                   {error}
                 </p>
               )}
-              <div className="collection-save-actions"><button aria-busy={Boolean(busy)} type="button" className="btn" disabled={busy} onClick={() => setEdit(null)}>取消</button><button aria-busy={Boolean(busy)} className="btn primary" disabled={busy}>
+              <AdminFormActions busy={busy}><button aria-busy={Boolean(busy)} className="btn primary" disabled={busy}>
                 {busy ? '保存中…' : '保存'}
-              </button></div>
+              </button></AdminFormActions>
             </form>
           )}
         </DialogContent>

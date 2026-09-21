@@ -35,6 +35,26 @@ class VisitorState(models.Model):
     registration_source = models.CharField(max_length=40,default='unknown')
     last_login_method = models.CharField(max_length=40,default='')
     sandbox = models.BooleanField(default=False)
+    # Profile data provided by the mini-program is deliberately separate from
+    # the account's email name fields. Phone numbers are encrypted at rest and
+    # are never included in public profile responses or audit messages.
+    nickname = models.CharField(max_length=48, default='', blank=True)
+    avatar_id = models.CharField(max_length=80, default='', blank=True)
+    phone_encrypted = models.TextField(default='', blank=True)
+    phone_digest = models.CharField(max_length=64, default='', blank=True)
+    phone_last4 = models.CharField(max_length=4, default='', blank=True)
+    phone_verified_at = models.DateTimeField(null=True, blank=True)
+    phone_review_status = models.CharField(max_length=16, default='unreviewed')
+    phone_reviewed_at = models.DateTimeField(null=True, blank=True)
+    phone_reviewed_by = models.CharField(max_length=254, default='', blank=True)
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['phone_digest'],
+                condition=models.Q(phone_digest__gt=''),
+                name='visitor_phone_digest_unique',
+            ),
+        ]
 
 class SocialConfig(models.Model):
     real_enabled = models.BooleanField(default=False)

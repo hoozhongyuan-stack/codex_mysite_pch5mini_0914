@@ -11,11 +11,20 @@ CATALOG = [
     ('orders.settings', '订单', '交易设置'),
     ('marketing.view', '营销', '查看活动与名单'), ('marketing.manage', '营销', '管理活动与报名'),
     ('marketing.checkin', '营销', '签到与撤销签到'), ('marketing.export', '营销', '导出报名'),
+    ('content.view', '内容', '查看内容与分类'), ('content.manage', '内容', '编辑内容与分类'),
+    ('assets.view', '素材', '查看素材'), ('assets.manage', '素材', '上传与管理素材'),
+    ('forms.view', '表单', '查看表单提交'), ('forms.manage', '表单', '处理表单提交'), ('forms.export', '表单', '导出表单提交'),
+    ('points.view', '积分', '查看积分规则、账户与流水'), ('points.manage', '积分', '管理积分规则与调整积分'),
+    ('videos.view', '视频', '查看视频专栏、数据与素材库'), ('videos.manage', '视频', '管理视频专栏与视频素材'),
+    ('configuration.manage', '配置', '管理站点、小程序与渠道配置'),
+    ('analytics.view', '数据', '查看运营与行为分析'),
+    ('visitors.view', '访客', '查看访客资料'), ('visitors.manage', '访客', '管理访客状态与资料'),
 ]
 KEYS = frozenset(row[0] for row in CATALOG)
 EDITOR_BASELINE = ['readContent', 'saveContent', 'deleteContent', 'saveCategory',
                    'deleteCategory', 'saveFolder', 'deleteFolder', 'moveAsset',
                    'renameAsset', 'deleteAsset', 'upload', 'readAssets']
+EDITOR_BASELINE_KEYS = ['content.view', 'content.manage', 'assets.view', 'assets.manage']
 
 
 def group_dict(group):
@@ -29,7 +38,8 @@ def effective_permissions(account):
     if account.role == 'owner':
         return sorted(KEYS)
     groups = PermissionGroup.objects.filter(staffpermissionassignment__account=account, active=True)
-    granted = {key for group in groups for key in group.permissions if key in KEYS}
+    granted = set(EDITOR_BASELINE_KEYS)
+    granted.update(key for group in groups for key in group.permissions if key in KEYS)
     legacy = MarketingGrant.objects.filter(email=account.email.lower()).first()
     if legacy:
         granted.update('marketing.' + key for key in legacy.permissions if 'marketing.' + key in KEYS)

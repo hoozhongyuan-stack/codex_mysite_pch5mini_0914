@@ -1,4 +1,7 @@
 'use client';
+import { AdminFormActions } from './admin-dialog';
+import { AdminTabs } from './admin-ui';
+import { useAdminUnsavedChanges } from './admin-navigation';
 import { useState } from 'react';
 import { Field, Choice, mutate } from './shared';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -19,7 +22,12 @@ export default function PolicyManager({ data, reload }: any) {
     ),
     [message, setMessage] = useState(''),
     [busy, setBusy] = useState(false);
+  const [dirty,setDirty]=useState(false);
+  useAdminUnsavedChanges(dirty);
   function choose(k: string) {
+    if(k===kind)return;
+    if(dirty&&!confirm('有未保存的修改，确定切换？'))return;
+    setDirty(false);
     setKind(k);
     setEdit(
       data.policies.find((p: any) => p.kind === k) || {
@@ -35,13 +43,14 @@ export default function PolicyManager({ data, reload }: any) {
     );
     setMessage('');
   }
-  const set = (k: string, v: string) => setEdit((s: any) => ({ ...s, [k]: v }));
+  const set = (k: string, v: string) => {setDirty(true);setEdit((s: any) => ({ ...s, [k]: v }));};
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     try {
       await mutate('savePolicy', { data: edit });
       await reload();
+      setDirty(false);
       setMessage(
         edit.status === 'published'
           ? '政策已发布，版本号已更新。'
@@ -63,15 +72,7 @@ export default function PolicyManager({ data, reload }: any) {
           </p>
         </div>
       </div>
-      <Tabs value={kind} onValueChange={(v) => choose(String(v))}>
-        <TabsList>
-          {Object.entries(labels).map(([k, l]) => (
-            <TabsTrigger key={k} value={k}>
-              {String(l)}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+      <AdminTabs label="协议类型" value={kind} items={Object.entries(labels).map(([k,l])=>[k,String(l)])} onChange={choose}/>
       <form
         className="panel settings-panel"
         style={{ marginTop: 20 }}
@@ -116,9 +117,11 @@ export default function PolicyManager({ data, reload }: any) {
           当前发布版本：
           {data.policies.find((p: any) => p.kind === kind)?.version || 0}
         </p>
+        <AdminFormActions showCancel={false} busy={busy}>
         <button aria-busy={Boolean(busy)} className="btn primary" disabled={busy}>
           {busy ? '保存中…' : '保存政策'}
         </button>
+        </AdminFormActions>
         {message && (
           <p className="notice" role="status">
             {message}

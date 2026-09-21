@@ -2,10 +2,11 @@
 import { useState } from 'react';
 import {
   Dialog,
+  AdminFormActions,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from './admin-dialog';
 import { ordersApi } from '../order-shared';
 export default function OrderBatch({ rows, operation, onClose, onDone }: any) {
   const [shipments, setShipments] = useState<
@@ -21,7 +22,7 @@ export default function OrderBatch({ rows, operation, onClose, onDone }: any) {
         if (!v && !busy) onClose();
       }}
     >
-      <DialogContent className="order-batch-dialog">
+      <DialogContent size="lg" className="order-batch-dialog">
         <DialogHeader>
           <DialogTitle>
             {operation === 'ship' ? '批量发货' : '关闭兑换订单'} · {rows.length}{' '}
@@ -102,19 +103,12 @@ export default function OrderBatch({ rows, operation, onClose, onDone }: any) {
             </label>
           )}
           {error && <p role="alert">{error}</p>}
-          <div className="flex-actions">
-            <button aria-busy={Boolean(busy)}
-              className="btn"
-              type="button"
-              disabled={busy}
-              onClick={onClose}
-            >
-              取消
-            </button>
+          <AdminFormActions busy={busy}>
+
             <button aria-busy={Boolean(busy)} className="btn primary" disabled={busy}>
               {busy ? '正在处理…' : '确认处理'}
             </button>
-          </div>
+          </AdminFormActions>
         </form>
       </DialogContent>
     </Dialog>

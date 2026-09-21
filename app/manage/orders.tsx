@@ -8,6 +8,8 @@ import OrderSettings from './order-settings';
 import OrderDetail from './order-detail';
 import OrderBatch from './order-batch';
 import './operations-layout.css';
+import { useAdminDetail } from './admin-navigation';
+import { AdminDetailState } from './admin-ui';
 export default function Orders({
   initialTab = 'list',
   pointsOnly = false,
@@ -18,7 +20,7 @@ export default function Orders({
     role === 'owner' || permissions.includes('orders.' + action);
   const incoming = typeof window==='undefined'?new URLSearchParams():new URLSearchParams(window.location.search);
   const [filters, setFilters] = useState({
-    q: '',
+    q: incoming.get('q') || '',
     pointsOnly: pointsOnly ? '1' : '',
     status: incoming.get('status') ||
       (initialTab === 'review'
@@ -37,13 +39,15 @@ export default function Orders({
   });
   const [result, setResult] = useState<any>({ rows: [] }),
     [stats, setStats] = useState<any[]>([]),
-    [order, setOrder] = useState<any>(null),
     [error, setError] = useState(''),
     [selected, setSelected] = useState<string[]>([]),
     [batch, setBatch] = useState(''),
     [outcomes, setOutcomes] = useState<any[]>([]),
     [busy, setBusy] = useState(false),
     [loading, setLoading] = useState(false);
+  const detailRoute = useAdminDetail<any>('order', id => ordersApi('admin-detail', {id}));
+  const order = detailRoute.value;
+  const setOrder = detailRoute.setValue;
   const request = useRef(0);
   const reload = async () => {
     const version = ++request.current;
@@ -117,6 +121,7 @@ export default function Orders({
       setBusy(false);
     }
   };
+  if (detailRoute.loading || detailRoute.error) return <AdminDetailState loading={detailRoute.loading} error={detailRoute.error} onBack={detailRoute.close} onRetry={detailRoute.retry}/>;
   if (order)
     return (
       <OrderDetail
@@ -124,7 +129,7 @@ export default function Orders({
         permissions={permissions}
         order={order}
         onBack={() => {
-          setOrder(null);
+          detailRoute.close();
           reload().catch((e) => setError(e.message));
         }}
         reload={async () =>
@@ -358,9 +363,7 @@ export default function Orders({
                       <button
                         className="btn"
                         onClick={() =>
-                          ordersApi('admin-detail', { id: o.id })
-                            .then(setOrder)
-                            .catch((e) => setError(e.message))
+                          detailRoute.open(o.id)
                         }
                       >
                         详情 / 处理

@@ -1,4 +1,5 @@
 'use client';
+import { AdminFormActions } from './admin-dialog';
 import { useEffect, useState } from 'react';
 import { Field, Choice } from './shared';
 export default function SmtpSettings({onSaved}:any) {
@@ -115,9 +116,9 @@ export default function SmtpSettings({onSaved}:any) {
             ['yes', '启用'],
           ]}
         />
-        <button aria-busy={Boolean(busy)} className="btn primary" disabled={busy}>
+        <AdminFormActions busy={busy} showCancel={false}><button aria-busy={Boolean(busy)} className="btn primary" disabled={busy}>
           保存邮件配置
-        </button>
+        </button></AdminFormActions>
       </form>
       <form
         style={{ marginTop: 24 }}

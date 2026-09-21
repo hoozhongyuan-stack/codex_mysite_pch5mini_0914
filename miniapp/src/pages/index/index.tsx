@@ -2,7 +2,7 @@ import {ActionButton,ActionView} from '../../components/interaction';
 import LoadingState from '../../components/loading-state';
 import Account from '../../components/account-content';
 import { useState, useEffect } from 'react';
-import Taro, { useDidShow, useLoad, usePullDownRefresh } from '@tarojs/taro';
+import Taro, { useDidShow, useLoad, usePullDownRefresh, useShareAppMessage, useShareTimeline } from '@tarojs/taro';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import { navigation, destinationUrl } from '../../lib/domain.mjs';
 import Catalog, { Cards } from '../../components/catalog';
 import Floating from '../../components/floating';
 import GlobalNavigation from '../../components/global-navigation';
+import { homeShare } from '../../lib/share.mjs';
 const labels: Record<string, string> = {
   home: '首页',
   products: '商品',
@@ -30,6 +31,8 @@ export default function Index() {
     [error, setError] = useState(''),
     [loading, setLoading] = useState(true),
     [cached, setCached] = useState(false),[refreshVersion,setRefreshVersion]=useState(0);
+  useShareAppMessage(homeShare);
+  useShareTimeline(homeShare);
   useLoad(p=>{if(p.target && labels[p.target])setTarget(p.target)});
   async function load() {
     setLoading(true);
@@ -41,10 +44,10 @@ export default function Index() {
       if (result.data) {
         const nav = navigation(result.data.mini.navigation);
         // Direct links remain accessible even when absent from bottom navigation.
-        const list = await request(
-          '/api/mini/catalog?kind=products&featured=1',
-        );
-        setRows(list.rows);
+        if (result.data.mini.productFloor?.enabled !== false) {
+          const list = await request('/api/mini/catalog?kind=products&featured=1');
+          setRows(list.rows);
+        } else setRows([]);
       }
     } catch (e) {
       setError((e as Error).message);
@@ -108,7 +111,7 @@ export default function Index() {
                 {config.mini.banners.map((b: any) => (
                   <SwiperItem key={b.imageId}>
                     <ActionView onClick={() => openLink(b)}>
-                      <Image src={image(b.imageId)+'?v='+encodeURIComponent(config.revision||'')} mode="aspectFill" />
+                      <Image src={image(b.imageId,'hero')+'&v='+encodeURIComponent(config.revision||'')} mode="aspectFill" lazyLoad />
                       <Text>{b.title}</Text>
                     </ActionView>
                   </SwiperItem>
@@ -116,12 +119,12 @@ export default function Index() {
               </Swiper>
             )}
             {(config.mini.hotspotImages || []).map((b:any,i:number)=><View key={i} style={{position:'relative',marginBottom:'24px'}}>
-              <Image src={image(b.imageId)+'?v='+encodeURIComponent(config.revision||'')} mode="widthFix" style={{width:'100%',display:'block'}}/>
+              <Image src={image(b.imageId,'hero')+'&v='+encodeURIComponent(config.revision||'')} mode="widthFix" style={{width:'100%',display:'block'}} lazyLoad/>
               {b.zones.map((z:any,j:number)=><ActionView key={j} ariaLabel={z.label} role="button" style={{position:'absolute',left:z.x+'%',top:z.y+'%',width:z.width+'%',height:z.height+'%'}} onClick={()=>openLink(z)}/>)}</View>)}
-            <View className='home-quick-links'>{nav.filter((n:any)=>['products','articles','points'].includes(n.target)).map((n:any)=><ActionView key={n.target} onClick={()=>change(n.target)}>{n.iconId&&<Image src={image(n.iconId)} mode='aspectFit'/>}<Text>{n.label} ›</Text></ActionView>)}</View>
+            <View className='home-quick-links'>{nav.filter((n:any)=>['products','articles'].includes(n.target)).map((n:any)=><ActionView key={n.target} onClick={()=>change(n.target)}>{n.iconId&&<Image src={image(n.iconId,'thumb')} mode='aspectFit' lazyLoad/>}<Text>{n.label} ›</Text></ActionView>)}</View>
             {rows.length > 0 && (
               <>
-                <Text className="section-title">精选商品</Text>
+                <Text className="section-title">{config.mini.productFloor?.title || '精选商品'}</Text>
                 <Cards rows={rows} />
               </>
             )}

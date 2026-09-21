@@ -1,4 +1,5 @@
 'use client';
+import { AdminFormActions } from './admin-dialog';
 import { selectedAssetId } from '@/lib/workspace-route.mjs';
 import { useState } from 'react';
 import AssetPicker from './asset-picker';
@@ -100,12 +101,12 @@ export default function BrandSettings({ data, reload, onDirty }: any) {
           {data.settings.nameZh} <span>×</span>
         </div>
       </div>
-      <div className="settings-save">
+      <AdminFormActions busy={busy} showCancel={false}>
         <button aria-busy={Boolean(busy)} className="btn primary" disabled={busy}>
           {busy ? '保存中…' : '保存配置'}
         </button>
-        <span role="status">{message}</span>
-      </div>
+        </AdminFormActions>
+      <span role="status">{message}</span>
       {picker && (
         <AssetPicker
           accept="image"

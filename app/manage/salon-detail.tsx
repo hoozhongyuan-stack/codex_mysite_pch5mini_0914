@@ -1,4 +1,6 @@
 'use client';
+import { AdminPageHeader, AdminTabs } from './admin-ui';
+import { useAdminTab } from './admin-navigation';
 import SiteLink from '../../components/site-link';
 
 import './operations-layout.css';
@@ -16,10 +18,11 @@ import {
 } from '@/components/ui/table';
 import {
   Dialog,
+  AdminFormActions,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from './admin-dialog';
 export default function SalonDetail({
   detail,
   onBack,
@@ -30,7 +33,8 @@ export default function SalonDetail({
   const can = (action: string) =>
     role === 'owner' || permissions.includes('marketing.' + action);
   const { event, stats } = detail;
-  const [tab, setTab] = useState('registrations'),
+  const [tab, setTab] = useAdminTab('salonTab', 'registrations', ['info','registrations','stats']);
+  const
     [qrOpen, setQrOpen] = useState(false),[qrImage,setQrImage]=useState('');
   const request=useRef(0);
   const [result, setResult] = useState<any>({ rows: [] }),
@@ -128,24 +132,10 @@ export default function SalonDetail({
     });
   return (
     <section className="operations-page">
-      <div className="salon-detail-header">
-        <button className="btn" onClick={onBack}>
-          <ArrowLeft />
-          活动列表
-        </button>
-        <h1>{event.titleZh}</h1>
-      </div>
-      <div className="operation-status-tabs">
-        {[
-          ['info', '活动信息'],
-          ['registrations', '报名记录'],
-          ['stats', '统计与签到'],
-        ].map(([id, label]) => (
-          <button key={id} aria-pressed={tab === id} onClick={() => setTab(id)}>
-            {label}
-          </button>
-        ))}
-      </div>
+      <AdminPageHeader title={event.titleZh} onBack={onBack} backLabel="活动列表"/>
+      <AdminTabs label="沙龙详情栏目" value={tab} items={[
+        ['info','活动信息'],['registrations','报名记录'],['stats','统计与签到']
+      ]} onChange={setTab}/>
       {tab === 'info' && (
         <div className="panel salon-details-panel">
           <h2>{event.titleZh}</h2>
@@ -194,7 +184,7 @@ export default function SalonDetail({
       )}
       {qrOpen && (
         <Dialog open onOpenChange={setQrOpen}>
-          <DialogContent>
+          <DialogContent size="sm">
             <DialogHeader>
               <DialogTitle>活动签到入口</DialogTitle>
             </DialogHeader>
@@ -490,8 +480,8 @@ export default function SalonDetail({
         </>
       )}
       {row && (
-        <Dialog open onOpenChange={(o) => !o && setRow(null)}>
-          <DialogContent style={{ maxHeight: '85vh', overflow: 'auto' }}>
+        <Dialog open onOpenChange={(o) => !o && !busy && setRow(null)}>
+          <DialogContent size="md" data-admin-edit>
             <DialogHeader>
               <DialogTitle>报名详情</DialogTitle>
             </DialogHeader>
@@ -519,7 +509,7 @@ export default function SalonDetail({
               value={reason}
               onChange={setReason}
             />
-            <div className="flex-actions">
+            <AdminFormActions busy={busy}>
               {[
                 ['note', '保存备注'],
                 ['checkin', '人工补签'],
@@ -556,7 +546,7 @@ export default function SalonDetail({
                     {l}
                   </button>
                 ))}
-            </div>
+            </AdminFormActions>
           </DialogContent>
         </Dialog>
       )}

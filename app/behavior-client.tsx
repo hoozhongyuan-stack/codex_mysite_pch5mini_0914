@@ -9,7 +9,9 @@ export function behavior(event:string,target?:string){
   if(event==='page_view'&&/^\/(zh|en)\/(account|orders)(\/|$)/.test(path))return;
   let visitorId=localStorage.getItem('geo-behavior-visitor');if(!visitorId){visitorId=crypto.randomUUID();localStorage.setItem('geo-behavior-visitor',visitorId);}
   let session=JSON.parse(sessionStorage.getItem('geo-behavior-session')||'null');if(!session||Date.now()-session.at>1800000)session={id:crypto.randomUUID()};session.at=Date.now();sessionStorage.setItem('geo-behavior-session',JSON.stringify(session));
-  void fetch('/api/behavior',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:crypto.randomUUID(),visitorId,sessionId:session.id,event,path,target,consent:true,channel:'website'}),keepalive:true}).catch(()=>{});
+  const query=String(location.search||'');
+  const shareRef=(typeof URLSearchParams==='function' ? new URLSearchParams(query).get('share') : (query.match(/[?&]share=([a-z0-9]{24})(?:&|$)/)||[])[1])||'';
+  void fetch('/api/behavior',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:crypto.randomUUID(),visitorId,sessionId:session.id,event,path,target,shareRef,consent:true,channel:'website'}),keepalive:true}).catch(()=>{});
  }catch{/* Optional statistics must never affect the customer journey. */}
 }
 let lastPage='',lastPageAt=0;

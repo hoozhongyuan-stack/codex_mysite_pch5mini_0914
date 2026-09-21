@@ -33,10 +33,11 @@ def get_config(provider):
     return c
 
 
-def request_json(url, data=None, bearer=None):
+def request_json(url, data=None, bearer=None, json_body=False):
     headers = {'Accept': 'application/json'}
     if bearer: headers['Authorization'] = 'Bearer ' + bearer
-    body = urlencode(data).encode() if data is not None else None
+    body = (json.dumps(data).encode() if json_body else urlencode(data).encode()) if data is not None else None
+    if json_body and body is not None: headers['Content-Type'] = 'application/json'
     try:
         with urlopen(Request(url, data=body, headers=headers), timeout=15) as response:
             result = json.loads(response.read(100000))

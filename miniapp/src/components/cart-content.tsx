@@ -58,7 +58,6 @@ export default function CartContent({onCheckout}:{onCheckout:(lines:any[])=>void
   const totals=Object.entries(chosen.reduce((a:any,r:any)=>({...a,[r.currency||'CNY']:(a[r.currency||'CNY']||0)+(r.priceMinor||0)*r.quantity}),{}));
   function setQuantity(r:any,value:string){return act(async()=>{const quantity=cartQuantity(value);if(token()&&!r.guest)await request('/api/mini/member/cart-set',{productId:r.productId,variant:r.variant,quantity});else saveGuestCart(guestCart().map(v=>cartLineKey(v)===cartLineKey(r)?{...v,quantity}:v));});}
   return <View style={{paddingBottom:'150px'}}>
-    {!token()&&<Text className="intro">商品暂存在当前设备，结算时登录即可同步。</Text>}
     {error&&<View className="notice">{error}<ActionButton size="mini" onClick={()=>act(load)}>重试</ActionButton></View>}
     {!rows.length&&<View className="empty">{loading?'正在读取购物车…':'购物车还是空的，去挑选喜欢的商品吧。'}{!loading&&<ActionButton onClick={()=>Taro.reLaunch({url:'/pages/index/index?target=products'})}>去逛逛</ActionButton>}</View>}
     {rows.map(r=><View className="panel" key={(r.guest?'guest:':'')+cartLineKey(r)}>
@@ -78,7 +77,7 @@ export default function CartContent({onCheckout}:{onCheckout:(lines:any[])=>void
         >
           {selected.includes(cartLineKey(r)) ? '✓' : '○'}
         </ActionView>
-        {r.imageId&&<ActionImage src={image(r.imageId)} style={{width:'64px',height:'64px',flexShrink:0,borderRadius:'8px'}} mode="aspectFill" onClick={()=>Taro.navigateTo({url:'/pages/detail/index?kind=products&id='+encodeURIComponent(r.productId)})}/>}
+        {r.imageId&&<ActionImage src={image(r.imageId,'thumb')} style={{width:'64px',height:'64px',flexShrink:0,borderRadius:'8px'}} mode="aspectFill" onClick={()=>Taro.navigateTo({url:'/pages/detail/index?kind=products&id='+encodeURIComponent(r.productId)})}/>}
         <View><Text>{r.title}</Text><Text className="intro">{r.variantLabel||'默认规格'}</Text><Text>{r.currency==='CNY'?'¥':r.currency||'¥'} {((r.priceMinor||0)/100).toFixed(2)}</Text></View>
       </View>
       {(r.choices||[]).length>1&&!r.guest&&<Picker range={r.choices.map((v:any)=>v.label||v.key)} value={Math.max(0,r.choices.findIndex((v:any)=>v.key===r.variant))} onChange={e=>act(async()=>{

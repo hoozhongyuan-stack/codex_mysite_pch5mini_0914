@@ -3,7 +3,7 @@ import { env } from 'cloudflare:workers';
 import { uploadOrderFile } from '@/app/api/order-files/[id]/route';
 import { identity } from '@/lib/identity';
 import { miniBuyer, bearer } from '@/lib/mini-auth';
-import { database, fail, HttpError, jsonBody, limited } from '@/lib/server';
+import { boundedResponse, database, fail, HttpError, jsonBody, limited } from '@/lib/server';
 import {
   orderDetail,
   actOrder,
@@ -59,6 +59,20 @@ export async function GET(request: Request, { params }: any) {
       });
     }
     const { user, session } = await miniBuyer(request);
+    if (action === 'avatar') {
+      const id = q.get('id') || '';
+      if (!/^[a-f0-9-]{36}$/.test(id) || user.avatarId !== id)
+        throw new HttpError(404, '头像不存在');
+      const obj = await env.FILES?.get('mini-avatar/' + user.id + '/' + id);
+      if (!obj) throw new HttpError(404, '头像不存在');
+      return new Response(obj.body, {
+        headers: {
+          'Content-Type': obj.httpMetadata?.contentType || 'image/png',
+          'Cache-Control': 'private,no-store',
+          'X-Content-Type-Options': 'nosniff',
+        },
+      });
+    }
     if (action === 'payment-image') {
       const order = await orderDetail(q.get('id') || '', String(user.id)),
         asset = q.get('asset') || '';
@@ -76,7 +90,7 @@ export async function GET(request: Request, { params }: any) {
     }
     if (action === 'payments') {
       const c = await commerceConfig();
-      return json({ offline: c.miniPayments?.offline === true, wechat: false });
+      return json({ offline: c.paymentChannels?.offline === true, wechat: false, requestedWechat: c.paymentChannels?.wechat === true, wechatReady: false });
     }
     if (action === 'cart') return json(await miniCart(String(user.id)));
     if (action === 'session') return json({ user });
@@ -173,6 +187,32 @@ export async function POST(request: Request, { params }: any) {
     }
     const { user, session } = await miniBuyer(request);
     await limited('mini-user:' + user.id, 60);
+    if (action === 'avatar-upload') {
+      const form = await boundedResponse(request, 6 * 1024 * 1024).formData();
+      const file = form.get('file');
+      if (
+        !(file instanceof File) ||
+        file.size === 0 ||
+        file.size > 5 * 1024 * 1024 ||
+        !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)
+      )
+        throw new HttpError(400, '仅支持5MB以内的 JPG、PNG、WebP');
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const valid =
+        (file.type === 'image/png' &&
+          Array.from(bytes.slice(0, 8)).join() === '137,80,78,71,13,10,26,10') ||
+        (file.type === 'image/jpeg' && bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255) ||
+        (file.type === 'image/webp' &&
+          new TextDecoder().decode(bytes.slice(0, 4)) === 'RIFF' &&
+          new TextDecoder().decode(bytes.slice(8, 12)) === 'WEBP');
+      if (!valid) throw new HttpError(400, '图片内容与格式不符');
+      if (!env.FILES) throw new HttpError(503, '存储服务尚未配置');
+      const id = crypto.randomUUID();
+      await env.FILES.put('mini-avatar/' + user.id + '/' + id, bytes, {
+        httpMetadata: { contentType: file.type },
+      });
+      return json({ id });
+    }
     if (action === 'proof-upload')
       return uploadOrderFile(
         request,
@@ -188,6 +228,16 @@ export async function POST(request: Request, { params }: any) {
     const input = await jsonBody(request),
       db = database();
     if (action === 'logout') return json(await identity('logout', { session }));
+    if (action === 'profile')
+      return json(
+        await identity('mini-profile', {
+          session,
+          nickname: input.nickname,
+          avatarId: input.avatarId,
+        }),
+      );
+    if (action === 'phone')
+      return json(await identity('mini-phone', { session, code: input.code }));
     if (action === 'quote') return json(await miniQuote(input.items));
     if (['cart-add','cart-set','cart-remove','cart-merge','cart-variant'].includes(action)) return json(await updateMiniCart(String(user.id),action,input));
     if (action === 'create-order')

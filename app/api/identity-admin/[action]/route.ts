@@ -13,10 +13,10 @@ export async function GET(
   { params }: { params: Promise<{ action: string }> },
 ) {
   try {
-    const user = await admin('saveSettings');
     const { action } = await params;
     if (!['smtp', 'users', 'social','mini'].includes(action))
       throw new HttpError(404, '未知操作');
+    const user = await admin(action === 'users' ? 'readUsers' : 'saveSettings');
     return Response.json(
       await identity(
         'admin-' + action,
@@ -39,7 +39,6 @@ export async function POST(
 ) {
   try {
     csrf(request);
-    const user = await admin('saveSettings');
     const { action } = await params;
     if (
       ![
@@ -47,10 +46,12 @@ export async function POST(
         'test-smtp',
         'set-user-enabled',
         'save-user-profile',
+        'review-user-phone',
         'social-save','mini-save',
       ].includes(action)
     )
       throw new HttpError(404, '未知操作');
+    const user = await admin(['set-user-enabled', 'save-user-profile', 'review-user-phone'].includes(action) ? 'manageUsers' : 'saveSettings');
     await limited('identity-admin:' + user.userId, 120);
     const data = await jsonBody(request);
     const result = await identity('admin-' + action, data, user.email);
@@ -68,7 +69,9 @@ export async function POST(
             ? String(data.provider)
             : action === 'save-user-profile'
               ? String(data.id)
-              : action === 'set-user-enabled'
+              : action === 'review-user-phone'
+                ? String(data.id) + ':phone-review:' + String(data.status)
+                : action === 'set-user-enabled'
                 ? String(data.id) +
                   ':' +
                   (data.enabled ? 'enabled' : 'disabled')

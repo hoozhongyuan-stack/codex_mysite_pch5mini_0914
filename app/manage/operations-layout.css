@@ -24,43 +24,6 @@
   font-size: 20px;
   font-weight: 650;
 }
-.admin-workspace .operation-status-tabs {
-  display: flex;
-  gap: 4px;
-  border-bottom: 1px solid #e8e6ed;
-  overflow: auto;
-  margin: 12px 0;
-}
-.admin-workspace .operation-status-tabs button {
-  padding: 9px 12px;
-  white-space: nowrap;
-  font-size: 13px;
-  border-bottom: 2px solid transparent;
-}
-.admin-workspace .operation-status-tabs [aria-pressed='true'] {
-  color: #6b4edc;
-  border-color: #6b4edc;
-}
-.admin-workspace .operation-filters {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: end;
-  gap: 8px 12px;
-  margin: 12px 0;
-}
-.admin-workspace .operation-filters > .field {
-  flex: 1 1 145px;
-  min-width: 0;
-  margin: 0;
-}
-.admin-workspace .operation-filters > .field:first-child {
-  flex: 2 1 230px;
-}
-.admin-workspace .operation-filters input {
-  width: 100%;
-  min-width: 0;
-  height: 34px;
-}
 .admin-workspace .operations-table-scroll {
   overflow-x: auto;
 }
@@ -119,11 +82,6 @@
   padding: 16px;
   margin: 12px 0;
 }
-body:has(.admin-workspace) .order-batch-dialog {
-  max-width: 820px;
-  max-height: 85dvh;
-  overflow: auto;
-}
 body:has(.admin-workspace) .batch-shipment {
   display: grid;
   grid-template-columns: minmax(0, 1.3fr) 1fr 1.2fr;
@@ -158,5 +116,5 @@ body:has(.admin-workspace) .batch-shipment input {
 /* Explicit authorization visibility must override button layout display rules. */
 .admin-workspace [hidden] { display: none !important; }
 .admin-workspace .list-pager > .field > span { white-space: nowrap; flex-shrink: 0; }
-.admin-workspace .list-batch input[type=number] { border:1px solid #dedbe6; border-radius:6px; background:white; height:32px; padding:5px 8px; }
+
 .admin-workspace .list-batch .btn:disabled { opacity:.45; cursor:not-allowed; }

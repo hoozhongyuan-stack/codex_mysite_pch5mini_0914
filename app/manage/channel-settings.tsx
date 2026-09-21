@@ -1,4 +1,6 @@
 'use client';
+import { useAdminTab, useAdminUnsavedChanges } from './admin-navigation';
+import { AdminTabs } from './admin-ui';
 import SiteLink from '../../components/site-link';
 
 import MiniLinkPicker from './mini-link-picker';
@@ -13,11 +15,12 @@ import { miniTargets, miniReadyTargets, validateMini } from '@/lib/channel-confi
 export default function ChannelSettings({ data, floatingOnly = false }: any) {
   const [state, setState] = useState<any>(null),
     [form, setForm] = useState<any>(null),
-    [tab, setTab] = useState('base'),
     [message, setMessage] = useState(''),
     [busy, setBusy] = useState(false),
     [picker, setPicker] = useState<any>(null),
     [dirty, setDirty] = useState(false);
+  const [tab, setTab] = useAdminTab('miniTab','base',['base','home','nav','checks']);
+  useAdminUnsavedChanges(dirty, ['miniTab']);
   const load = async () => {
     const r = await fetch('/api/channel-config?admin=1');
     const d: any = await r.json();
@@ -29,16 +32,6 @@ export default function ChannelSettings({ data, floatingOnly = false }: any) {
   useEffect(() => {
     load().catch((e) => setMessage(e.message));
   }, []);
-  useEffect(() => {
-    const warn = (e: BeforeUnloadEvent) => {
-      if (dirty) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-    window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
-  }, [dirty]);
   const change = (next: any) => {
     setForm(next);
     setDirty(true);
@@ -190,24 +183,9 @@ export default function ChannelSettings({ data, floatingOnly = false }: any) {
         </p>
       )}
       {!floatingOnly && (
-        <div className="tabs" role="tablist">
-          {[
-            ['base', '基础配置'],
-            ['home', '首页装修'],
-            ['nav', '底部导航'],
-            ['checks', '版本与检查'],
-          ].map(([k, l]) => (
-            <button
-              role="tab"
-              aria-selected={tab === k}
-              key={k}
-              className={'mini-tab ' + (tab === k ? 'active' : '')}
-              onClick={() => setTab(k)}
-            >
-              {l}
-            </button>
-          ))}
-        </div>
+        <AdminTabs label="小程序配置栏目" value={tab} items={[
+          ['base','基础配置'],['home','首页装修'],['nav','底部导航'],['checks','版本与检查']
+        ]} onChange={setTab}/>
       )}
       <div className="panel" style={{ marginTop: 20 }}>
         {floatingOnly ? (
@@ -427,6 +405,7 @@ export default function ChannelSettings({ data, floatingOnly = false }: any) {
             ))}
             {!m.banners.length && <p className="mini-empty">尚未添加轮播图。每张图可关联一个目标页面。</p>}</section></details>
             <details className="mini-module" open><summary>图片热区 · {(m.hotspotImages || []).length} 张</summary><MiniHotspots items={m.hotspotImages || []} onChange={(v:any)=>mini('hotspotImages',v)} selectImage={(apply:any)=>setPicker({apply})} contents={data.contents} onSave={()=>save('save')} busy={busy} message={message}/></details>
+            <details className="mini-module" open><summary>商品楼层 · {m.productFloor?.enabled !== false ? '显示' : '隐藏'}</summary><section className="mini-section"><div className="field-grid"><label className="field"><span>展示设置</span><label><input type="checkbox" checked={m.productFloor?.enabled !== false} onChange={e=>mini('productFloor',{...(m.productFloor||{}),enabled:e.target.checked})}/> 在小程序首页展示商品楼层</label></label><Field label="楼层标题" value={m.productFloor?.title || '精选商品'} onChange={(v:string)=>mini('productFloor',{...(m.productFloor||{}),title:v})}/></div><p className="muted">关闭后不请求或展示首页推荐商品；已发布商品仍可从商城访问。</p></section></details>
             <details className="mini-module"><summary>推荐商品 · {m.featuredIds.length}/12</summary><div className="mini-featured-options">
             {data.contents
               .filter(

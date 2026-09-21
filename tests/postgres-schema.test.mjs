@@ -4,15 +4,16 @@ import {readFile,readdir} from 'node:fs/promises';
 import {randomUUID} from 'node:crypto';
 const schema = await readFile(new URL('../postgres/001-cms-schema.sql',import.meta.url),'utf8');
 const guards = await readFile(new URL('../postgres/002-cms-guards.sql',import.meta.url),'utf8');
+const imageVariants = await readFile(new URL('../postgres/004-image-variants.sql',import.meta.url),'utf8');
 test('PostgreSQL baseline preserves all SQLite tables and all active trigger names', async () => {
  const tables=new Set(), triggers=new Set();
  for(const file of (await readdir(new URL('../drizzle/',import.meta.url))).filter(f=>f.endsWith('.sql')).sort()) {
   const source=await readFile(new URL('../drizzle/'+file,import.meta.url),'utf8');
-  for(const m of source.matchAll(/CREATE TABLE `([^`]+)`/g)) tables.add(m[1]);
+  for(const m of source.matchAll(/CREATE TABLE(?: IF NOT EXISTS)? `([^`]+)`/g)) tables.add(m[1]);
   for(const m of source.matchAll(/(CREATE TRIGGER(?: IF NOT EXISTS)?|DROP TRIGGER) (\w+)/g)) m[1].startsWith('DROP')?triggers.delete(m[2]):triggers.add(m[2]);
  }
- assert.equal(tables.size,26); assert.equal(triggers.size,33);
- assert.deepEqual(new Set([...schema.matchAll(/CREATE TABLE "([^"]+)"/g)].map(m=>m[1])),tables);
+ assert.equal(tables.size,27); assert.equal(triggers.size,33);
+ assert.deepEqual(new Set([...[...schema.matchAll(/CREATE TABLE "([^"]+)"/g)].map(m=>m[1]), ...[...imageVariants.matchAll(/CREATE TABLE IF NOT EXISTS ([a-z_]+)/g)].map(m=>m[1])]),tables);
  assert.deepEqual(new Set([...guards.matchAll(/^CREATE TRIGGER (\w+)/gm)].map(m=>m[1])),triggers);
  assert.match(guards,/pg_advisory_xact_lock/); assert.match(guards,/FOR UPDATE/);
  assert.doesNotMatch(guards,/RAISE\(ABORT|json_extract|strftime/);

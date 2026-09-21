@@ -1,7 +1,6 @@
 'use client';
 import SiteLink from '../components/site-link';
 
-import './admin-compact.css';
 import { useRouter } from 'next/navigation';
 import StatisticsDashboard from './manage/dashboard';
 import { useEffect, useState, useCallback } from 'react';
@@ -53,6 +52,8 @@ import {
   SidebarInset,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
+import './admin-compact.css';
+import { AdminTrail } from './manage/admin-navigation';
 const menus = [
   ['overview', '总览', LayoutDashboard],
   ['marketing', '营销中心', Sparkles],
@@ -151,10 +152,7 @@ export default function Dashboard({ view = 'overview' }: { view?: string }) {
           <WorkspaceNav view={view} data={data} />
         </SidebarContent>
         <SidebarFooter className="px-5 py-5">
-          <SiteLink className="nav-item" href="/admin/profile">
-            个人设置
-          </SiteLink>
-          <div className="nav-item">
+          <SiteLink className="nav-item account-summary" href="/admin/profile" aria-label="打开个人设置">
             <span
               className="brand-icon"
               style={{ width: 30, height: 30, fontSize: 13 }}
@@ -165,10 +163,10 @@ export default function Dashboard({ view = 'overview' }: { view?: string }) {
               {data?.user.role === 'editor' ? '内容编辑员' : '站点管理员'}
               <br />
               <small className="muted" style={{ fontSize: 12 }}>
-                我的工作空间
+                账户与个人设置
               </small>
             </span>
-          </div>
+          </SiteLink>
           <SiteLink
             className="nav-item"
             href="/admin/login"
@@ -210,6 +208,7 @@ export default function Dashboard({ view = 'overview' }: { view?: string }) {
                           .flatMap((g) => g.items)
                           .find((i) => i[0] === view)?.[1] || '数据概览'}
               </b>
+              <AdminTrail view={view}/>
             </span>
           </div>
           <div className="flex-actions">

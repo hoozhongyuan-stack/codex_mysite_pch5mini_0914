@@ -1,11 +1,12 @@
 'use client';
+import { AdminPagination } from './admin-ui';
 import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from './admin-dialog';
 import { mutate } from './shared';
 export default function MediaBrowser({
   picker = false,
@@ -427,31 +428,7 @@ export default function MediaBrowser({
             </button>
           </>
         )}
-        <span>
-          共 {result.total} 个 · {result.page}/{result.pages} 页
-        </span>
-        <button aria-busy={Boolean(loading)}
-          type="button"
-          className="btn"
-          disabled={loading || result.page <= 1}
-          onClick={() => {
-            setPage(result.page - 1);
-            if (!picker) setSelected([]);
-          }}
-        >
-          上一页
-        </button>
-        <button aria-busy={Boolean(loading)}
-          type="button"
-          className="btn"
-          disabled={loading || result.page >= result.pages}
-          onClick={() => {
-            setPage(result.page + 1);
-            if (!picker) setSelected([]);
-          }}
-        >
-          下一页
-        </button>
+        <AdminPagination page={result.page} pages={result.pages} total={result.total} busy={loading} onPage={next=>{setPage(next);if(!picker)setSelected([]);}} />
         {picker && (
           <div className="picker-confirm-actions">
             <button aria-busy={Boolean(busy)}
@@ -487,7 +464,7 @@ export default function MediaBrowser({
       </div>
       {preview && (
         <Dialog open onOpenChange={(v) => !v && setPreview(null)}>
-          <DialogContent className="media-preview-dialog">
+          <DialogContent size="lg" className="media-preview-dialog">
             <DialogHeader>
               <DialogTitle>素材预览</DialogTitle>
             </DialogHeader>

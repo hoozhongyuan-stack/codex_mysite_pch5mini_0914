@@ -17,7 +17,7 @@ from django.utils import timezone
 from django.utils.html import format_html
 from .models import Session, Token, Consent, Throttle, Audit, VisitorState
 from . import mailer
-from .admin_users import disabled, profile, list_users, set_enabled, save_profile
+from .admin_users import disabled, profile, list_users, set_enabled, save_profile, review_phone
 from . import social, marketing, marketing_admin
 
 def digest(value):
@@ -96,16 +96,24 @@ def endpoint(request,action):
     try:
         data=json.loads(request.body)
         if not isinstance(data,dict): raise ValueError('请求格式错误')
-        if action in ('mini-status','mini-login'):
+        if action in ('mini-status','mini-login','mini-profile','mini-phone'):
             from . import mini
             if action=='mini-login':rate('mini:'+str(data.get('_ip','')),30)
-            return JsonResponse(mini.status() if action=='mini-status' else mini.login(data))
+            if action=='mini-status': result=mini.status()
+            elif action=='mini-login': result=mini.login(data)
+            elif action=='mini-profile': result=mini.save_profile(data)
+            else: result=mini.bind_phone(data)
+            return JsonResponse(result)
         if action.startswith('admin-points-'):
             from .staff_auth import current
+            from .permissions import effective_permissions
             from .points import admin_action
             staff = current(data.pop('_staff', ''))
-            if not staff or staff.role != 'owner': raise PermissionError('仅管理员可管理积分')
-            return JsonResponse(admin_action(action.removeprefix('admin-points-'), data, staff))
+            sub = action.removeprefix('admin-points-')
+            required = 'points.manage' if sub in ('save-rule', 'adjust') else 'points.view'
+            if not staff or (staff.role != 'owner' and required not in effective_permissions(staff)):
+                raise PermissionError('此账号没有积分模块权限')
+            return JsonResponse(admin_action(sub, data, staff))
         if action in ('points-interact', 'points-state', 'points-favorites'):
             from .point_interactions import interact, state, favorites
             user = marketing.visitor_user(data)
@@ -138,9 +146,12 @@ def endpoint(request,action):
         if action.startswith('admin-video-'):
             from .videos import admin_action
             from .staff_auth import current
+            from .permissions import effective_permissions
             staff=current(data.pop('_staff',''))
-            if not staff or staff.role!='owner':raise PermissionError('仅管理员可管理视频')
             sub=action.removeprefix('admin-video-')
+            required = 'videos.view' if sub in ('list', 'detail', 'library') else 'videos.manage'
+            if not staff or (staff.role != 'owner' and required not in effective_permissions(staff)):
+                raise PermissionError('此账号没有视频模块权限')
             if sub=='library' or sub.startswith('source-'):
                 from .video_library import action as library_action
                 return JsonResponse(library_action(sub,data,staff))
@@ -171,6 +182,7 @@ def endpoint(request,action):
             elif action=='admin-users':
                 result=list_users(data)
             elif action=='admin-set-user-enabled': result=set_enabled(data,actor)
+            elif action=='admin-review-user-phone': result=review_phone(data,actor)
             else: raise ValueError('未知操作')
             return JsonResponse(result)
         if action.startswith('marketing-'):

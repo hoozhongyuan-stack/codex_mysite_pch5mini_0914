@@ -36,7 +36,9 @@ export default function ContentInteractions({
       if (action === 'share') {
         const url = new URL(location.href);
         if (kind === 'video') url.searchParams.set('episode', id);
+        url.searchParams.set('share', Array.from({length:24},()=>Math.floor(Math.random()*36).toString(36)).join(''));
         await navigator.clipboard.writeText(url.href);
+        behavior('share',id);
       }
       const active = action === 'share' || !actions.includes(action);
       const r = await fetch('/api/points/interact', {

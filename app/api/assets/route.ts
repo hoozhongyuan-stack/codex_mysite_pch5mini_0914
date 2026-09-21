@@ -42,16 +42,29 @@ export async function GET(request: Request) {
       ).n,
       pages = Math.max(1, Math.ceil(total / 20)),
       current = Math.min(page, pages);
-    const rows = (
-      await db
-        .prepare(
-          'SELECT a.*,m.folder_id' +
-            from +
-            ' ORDER BY a.created_at DESC,a.id DESC LIMIT 20 OFFSET ?',
-        )
-        .bind(...args, (current - 1) * 20)
-        .all()
-    ).results;
+    let rows: any[];
+    try {
+      rows = (
+        await db
+          .prepare(
+            "SELECT a.*,m.folder_id,(SELECT COUNT(*) FROM asset_variants v WHERE v.asset_id=a.id AND v.status='ready') AS derivative_count" +
+              from +
+              ' ORDER BY a.created_at DESC,a.id DESC LIMIT 20 OFFSET ?',
+          )
+          .bind(...args, (current - 1) * 20)
+          .all()
+      ).results as any[];
+    } catch (error) {
+      // The schema change is additive. A brief migration gap must not block
+      // material management or make uploaded originals disappear.
+      if (!/asset_variants|no such table|does not exist/i.test(String(error))) throw error;
+      rows = (
+        await db
+          .prepare('SELECT a.*,m.folder_id' + from + ' ORDER BY a.created_at DESC,a.id DESC LIMIT 20 OFFSET ?')
+          .bind(...args, (current - 1) * 20)
+          .all()
+      ).results.map((row: any) => ({...row, derivative_count: 0}));
+    }
     const folders = (
       await db
         .prepare(

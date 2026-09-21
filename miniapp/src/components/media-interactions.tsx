@@ -15,7 +15,7 @@ export default function MediaInteractions({kind,id,parentId}:{kind:string;id:str
   const session=token();
   if(!session){pending.current=action;await Taro.navigateTo({url:'/pages/login/index'});return;}
   if(lock.current)return;lock.current=true;setBusy(true);
-  try{const adding=action==='favorite'&&!state.actions?.includes(action);await request(endpoint+'&action=interact',{id,parentId,action,active:action==='share'||!state.actions?.includes(action)},session);if(adding)behavior('favorite',id);const result=await request(endpoint+'&action=state&id='+id,undefined,session);if(token()===session)setState(result)}
+  try{const adding=action==='favorite'&&!state.actions?.includes(action);await request(endpoint+'&action=interact',{id,parentId,action,active:action==='share'||!state.actions?.includes(action)},session);if(action==='share')behavior('share',id);if(adding)behavior('favorite',id);const result=await request(endpoint+'&action=state&id='+id,undefined,session);if(token()===session)setState(result)}
   catch(e){if(session===token())void Taro.showToast({title:(e as Error).message,icon:'none'})}
   finally{if(session===token()){lock.current=false;setBusy(false)}}
  }

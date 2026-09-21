@@ -1,4 +1,5 @@
 'use client';
+import { useId, useRef } from 'react';
 import {
   Select,
   SelectContent,
@@ -15,9 +16,14 @@ export function Field({
   type = 'text',
   maxLength = 30000,
   placeholder,
+  width,
+  error,
+  hint,
+  ...inputProps
 }: any) {
+  const id = useId();
   return (
-    <label className="field">
+    <label className="field" data-width={width || (type === 'number' ? 'short' : multiline ? 'full' : 'full')}>
       <span>
         {required && (
           <b className="required-mark" aria-hidden="true">
@@ -28,6 +34,9 @@ export function Field({
       </span>
       {multiline ? (
         <textarea
+          {...inputProps}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error || hint ? id : undefined}
           value={value ?? ''}
           onChange={(e) => onChange(e.target.value)}
           rows={5}
@@ -36,6 +45,9 @@ export function Field({
         />
       ) : (
         <input
+          {...inputProps}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error || hint ? id : undefined}
           type={type}
           placeholder={placeholder}
           value={value ?? ''}
@@ -44,6 +56,7 @@ export function Field({
           required={required}
         />
       )}
+      {(error || hint) && <small id={id} className={error ? 'field-error' : 'muted'}>{error || hint}</small>}
     </label>
   );
 }
@@ -53,9 +66,11 @@ export function Choice({
   items,
   label,
   required = false,
+  width = 'standard',
 }: any) {
+  const field = useRef<HTMLLabelElement>(null);
   return (
-    <label className="field">
+    <label ref={field} className="field" data-width={width}>
       <span>
         {required && (
           <b className="required-mark" aria-hidden="true">
@@ -64,8 +79,8 @@ export function Choice({
         )}
         {label}
       </span>
-      <Select required={required} value={value} onValueChange={onChange}>
-        <SelectTrigger style={{ width: '100%', height: 42 }}>
+      <Select required={required} value={value} onValueChange={(next) => { if(next !== value) { onChange(next); field.current?.dispatchEvent(new CustomEvent('admin:field-change', {bubbles:true})); } }}>
+        <SelectTrigger>
           <SelectValue>
             {items.find((i: any) => i[0] === value)?.[1] || '请选择'}
           </SelectValue>

@@ -13,7 +13,7 @@ import {
   transition,
 } from './order-domain.mjs';
 export const defaultOrderConfig = {
-  enabled: false,miniPayments:{offline:false,wechat:false},
+  enabled: false,paymentChannels:{offline:false,wechat:false},miniPayments:{offline:false,wechat:false},
   timeoutHours: 24,
   afterSaleDays: null,
   shipping: { CNY: 0, USD: 0, EUR: 0, GBP: 0, HKD: 0 },
@@ -24,9 +24,16 @@ export async function commerceConfig() {
   const row = await database()
     .prepare("SELECT data FROM settings WHERE id='commerce'")
     .first<any>();
-  return row
-    ? { ...defaultOrderConfig, ...JSON.parse(row.data) }
-    : defaultOrderConfig;
+  if (!row) return defaultOrderConfig;
+  const stored = { ...defaultOrderConfig, ...JSON.parse(row.data) };
+  const legacy = stored.miniPayments || {};
+  // `paymentChannels` is the single source for PC, H5 and mini checkout.
+  // Existing settings retain their former site/mini offline behavior until saved again.
+  const paymentChannels = {
+    offline: stored.paymentChannels?.offline === true || (!stored.paymentChannels && (stored.enabled === true || legacy.offline === true)),
+    wechat: stored.paymentChannels?.wechat === true || legacy.wechat === true,
+  };
+  return { ...stored, paymentChannels, miniPayments: paymentChannels };
 }
 export async function orderAdmin(permission: string) {
   const user = await admin();
@@ -148,7 +155,7 @@ export async function createOrder(user: any, input: any, channel:"website"|"mini
     )
   )
     throw Error('沙箱账号只能购买指定测试商品');
-  const quote = checkout(input.items, products.filter(Boolean), {...config,enabled:channel==='mini'?config.miniPayments?.offline===true:config.enabled}),
+  const quote = checkout(input.items, products.filter(Boolean), {...config,enabled:config.paymentChannels?.offline===true}),
     id = crypto.randomUUID(),
     at = now();
   if(channel==='mini' && (!input.expectedQuote || input.expectedQuote!==quoteStamp(quote))) throw new HttpError(409,'商品价格或运费已变化，请重新核对订单金额后提交');

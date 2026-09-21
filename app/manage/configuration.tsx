@@ -1,4 +1,6 @@
 'use client';
+import { AdminTabs } from './admin-ui';
+import { useAdminTab, useAdminUnsavedChanges } from './admin-navigation';
 import SiteLink from '../../components/site-link';
 
 import { useState, useEffect } from 'react';
@@ -25,17 +27,20 @@ import {
 } from '@/components/ui/table';
 import {
   Dialog,
+  AdminFormActions,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog';
+} from './admin-dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Field, mutate } from './shared';
 export function SettingsManager({ data, reload }: any) {
-  const [tab, setTab] = useState('base');
+  const [tab, setTab] = useAdminTab('settingsTab', 'base', ['base','brand','footer','smtp','social']);
   const [dirty, setDirty] = useState(false);
+  useAdminUnsavedChanges(dirty);
   const [settings, setSettings] = useState(data.settings);
+  useEffect(() => { setDirty(false); setSettings(data.settings); }, [tab, data.settings]);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const set = (k: string, v: string) =>
@@ -62,31 +67,9 @@ export function SettingsManager({ data, reload }: any) {
           <p className="muted">品牌信息会同步到前台与搜索元数据。</p>
         </div>
       </div>
-      <div className="settings-tabs" role="tablist">
-        {[
-          ['base', '基础信息'],
-          ['brand', '品牌与图标'],
-          ['footer', '页脚设置'],
-          ['smtp', '邮件服务'],
-          ['social', '社交登录'],
-        ].map(([key, label]) => (
-          <button
-            key={key}
-            className={'btn ' + (tab === key ? 'primary' : '')}
-            role="tab"
-            aria-selected={tab === key}
-            onClick={() => {
-              if (tab === key) return;
-              if (dirty && !confirm('当前页可能有未保存的修改，确定切换？'))
-                return;
-              setDirty(false);
-              setTab(key);
-            }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <AdminTabs label="网站设置栏目" value={tab} items={[
+        ['base','基础信息'],['brand','品牌与图标'],['footer','页脚设置'],['smtp','邮件服务'],['social','社交登录']
+      ]} onChange={key=>{if(key===tab)return; setTab(key);}}/>
       <div className="settings-content" onChangeCapture={() => setDirty(true)}>
         {tab === 'base' && (
           <form className="panel settings-panel" onSubmit={save}>
@@ -348,7 +331,7 @@ export function UsersManager() {
   );
 }
 export function GeoManager({ data, reload }: any) {
-  const [tab, setTab] = useState('visits');
+  const [tab, setTab] = useAdminTab('geoTab','visits',['visits','evidence']);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     engine: '',
@@ -491,8 +474,8 @@ export function GeoManager({ data, reload }: any) {
           </div>
         )}
       </section>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="editor-dialog">
+      <Dialog open={open} onOpenChange={next => { if (!busy) setOpen(next); }}>
+        <DialogContent size="md" className="editor-dialog">
           <DialogHeader>
             <DialogTitle>记录引用证据</DialogTitle>
             <DialogDescription>
@@ -531,9 +514,9 @@ export function GeoManager({ data, reload }: any) {
                 {error}
               </p>
             )}
-            <button aria-busy={Boolean(busy)} className="btn primary" disabled={busy}>
+            <AdminFormActions busy={busy}><button aria-busy={Boolean(busy)} className="btn primary" disabled={busy}>
               {busy ? '保存中…' : '保存证据'}
-            </button>
+            </button></AdminFormActions>
           </form>
         </DialogContent>
       </Dialog>

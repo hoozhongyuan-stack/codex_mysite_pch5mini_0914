@@ -11,7 +11,8 @@ import subprocess
 import signal
 import sys
 
-SERVICES = ['aition-expiry.service', 'aition-points.service', 'aition-video.service', 'aition-web.service', 'aition-identity.service']
+BASE_SERVICES = ['aition-expiry.service', 'aition-points.service', 'aition-video.service', 'aition-web.service', 'aition-identity.service']
+OPTIONAL_SERVICES = ['aition-images.service']
 DATABASES = ['aition_cms_uat', 'aition_identity_uat']
 
 
@@ -22,6 +23,13 @@ def run(args, **kwargs):
 def require_root():
     if os.geteuid() != 0:
         raise SystemExit('Run as root; snapshots include private configuration and media.')
+
+
+def services():
+    return [*BASE_SERVICES, *[
+        unit for unit in OPTIONAL_SERVICES
+        if subprocess.run(['systemctl', 'cat', unit], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+    ]]
 
 
 def digest(path):
@@ -56,11 +64,12 @@ def main():
     staging = destination / ('.incomplete-' + stamp)
     final = destination / stamp
     staging.mkdir(mode=0o700)
-    active = [unit for unit in SERVICES if subprocess.run(['systemctl', 'is-active', '--quiet', unit]).returncode == 0]
+    managed = services()
+    active = [unit for unit in managed if subprocess.run(['systemctl', 'is-active', '--quiet', unit]).returncode == 0]
     completed = False
     try:
         # Stop every writer, including workers; manual stop suppresses Restart=on-failure.
-        run(['systemctl', 'stop', *SERVICES])
+        run(['systemctl', 'stop', *managed])
         for database in DATABASES:
             with (staging / (database + '.dump')).open('xb') as output:
                 run(['runuser', '-u', 'postgres', '--', 'pg_dump', '--format=custom', '--dbname=' + database], stdout=output)

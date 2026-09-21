@@ -24,6 +24,19 @@ class PermissionGroupTests(TestCase):
         self.assertNotIn('orders.finance', effective_permissions(self.editor))
         self.assertEqual(len(self.call('list')['logs']), 3)
 
+    def test_editor_keeps_only_content_asset_baseline_until_group_assigned(self):
+        baseline = effective_permissions(self.editor)
+        self.assertIn('content.manage', baseline)
+        self.assertIn('assets.manage', baseline)
+        self.assertNotIn('configuration.manage', baseline)
+        self.assertNotIn('visitors.view', baseline)
+        group = self.call('save', name='访客查看', permissions=['visitors.view'])['group']
+        self.call('assign', accountId=str(self.editor.pk), groupIds=[group['id']])
+        self.assertIn('visitors.view', effective_permissions(self.editor))
+        module_group = self.call('save', name='积分与视频', permissions=['points.view', 'points.manage', 'videos.view', 'videos.manage'])['group']
+        self.call('assign', accountId=str(self.editor.pk), groupIds=[group['id'], module_group['id']], revision=1)
+        self.assertTrue({'points.view', 'points.manage', 'videos.view', 'videos.manage'}.issubset(effective_permissions(self.editor)))
+
     def test_legacy_marketing_does_not_widen_and_disabled_group_denies(self):
         MarketingGrant.objects.create(email=self.editor.email, permissions=['checkin'])
         self.assertEqual([p for p in effective_permissions(self.editor) if p.startswith('marketing.')], ['marketing.checkin'])

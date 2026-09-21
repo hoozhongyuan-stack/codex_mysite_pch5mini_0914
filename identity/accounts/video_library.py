@@ -87,7 +87,8 @@ def chunk(request):
  if not authorized(request):return JsonResponse({'error':'Forbidden'},status=403)
  try:
   staff=current(request.headers.get('X-Staff-Session',''))
-  if not staff or staff.role!='owner':raise PermissionError('请登录管理员账号')
+  from .permissions import effective_permissions
+  if not staff or (staff.role!='owner' and 'videos.manage' not in effective_permissions(staff)):raise PermissionError('此账号没有视频管理权限')
   blob=request.read(CHUNK_SIZE+1)
   if not 0<len(blob)<=CHUNK_SIZE:raise ValueError('分块大小无效')
   offset=int(request.GET.get('offset','-1'))

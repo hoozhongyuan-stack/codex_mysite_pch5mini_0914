@@ -1,4 +1,5 @@
 'use client';
+import { AdminPageHeader } from './admin-ui';
 import SiteLink from '../../components/site-link';
 
 import { refundQuote } from '@/lib/refund-domain.mjs';
@@ -15,10 +16,11 @@ import {
 import { orderStatuses } from '@/lib/order-domain.mjs';
 import {
   Dialog,
+  AdminFormActions,
   DialogContent,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog';
+} from './admin-dialog';
 const titles: Record<string, string> = {
   approve: '确认收款',
   reject: '驳回付款凭证',
@@ -102,10 +104,7 @@ export default function OrderDetail({ order, onBack, reload,role='editor',permis
   );
   return (
     <section className="admin-order-detail">
-      <button className="btn" onClick={onBack}>
-        ← 订单列表
-      </button>
-      <h1>订单详情</h1>
+      <AdminPageHeader title="订单详情" onBack={onBack} backLabel="订单列表"/>
       <div className="order-status-heading">
         <OrderNumber order={order} />
         <b>{(orderStatuses as any)[order.status]}</b>
@@ -392,22 +391,15 @@ export default function OrderDetail({ order, onBack, reload,role='editor',permis
                 {error}
               </p>
             )}
-            <div className="order-actions">
+            <AdminFormActions busy={busy}>
               <button aria-busy={Boolean(busy)}
                 className="btn primary"
                 disabled={busy || (op === 'refund' && order.currency !== 'PTS' && !files.length)}
               >
                 {busy ? '保存中…' : '确认保存'}
               </button>
-              <button aria-busy={Boolean(busy)}
-                type="button"
-                className="btn"
-                disabled={busy}
-                onClick={() => setOp('')}
-              >
-                取消
-              </button>
-            </div>
+
+            </AdminFormActions>
           </form>
         </DialogContent>
       </Dialog>

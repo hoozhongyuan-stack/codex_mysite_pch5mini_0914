@@ -12,7 +12,7 @@ export async function miniQuote(items:any[]) {
     return row?{...JSON.parse(row.data),id:row.id,status:row.status}:null;
   }));
   const c=await commerceConfig();
-  const quote=checkout(items,products.filter(Boolean),{...c,enabled:c.miniPayments?.offline===true});
+  const quote=checkout(items,products.filter(Boolean),{...c,enabled:c.paymentChannels?.offline===true});
   for(const p of products.filter(Boolean)){
     const locked=await db.prepare("SELECT COALESCE(SUM(i.quantity),0) AS total FROM order_items i JOIN orders o ON o.id=i.order_id WHERE i.product_id=? AND o.paid=0 AND o.status IN ('building','pending_payment','pending_review')").bind(p.id).first<any>();
     const quantity=quote.items.filter((i:any)=>i.productId===p.id).reduce((n:number,i:any)=>n+i.quantity,0);

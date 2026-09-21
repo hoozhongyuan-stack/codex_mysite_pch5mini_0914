@@ -2,14 +2,16 @@
 import { useState } from 'react';
 import Particles from './particles';
 import PasswordField from './password-field';
+import SiteLink from '@/components/site-link';
+import '../../admin-compact.css';
 export default function StaffLogin({ profile = false }: any) {
   const [message, setMessage] = useState(''),
     [busy, setBusy] = useState(false);
   return (
-    <main className="staff-login">
-      <Particles />
+    <main className={profile ? "admin-workspace admin-profile" : "staff-login"}>
+      {!profile && <Particles />}
       <form
-        className="panel"
+        className={profile ? "panel workspace admin-profile-panel" : "panel"}
         onSubmit={async (e) => {
           e.preventDefault();
           setBusy(true);
@@ -37,6 +39,7 @@ export default function StaffLogin({ profile = false }: any) {
           }
         }}
       >
+        {profile && <SiteLink className="btn" href="/admin">返回工作台</SiteLink>}
         <h1>{profile ? '修改管理员账号与密码' : '管理后台'}</h1>
         <p className="muted">
           {profile

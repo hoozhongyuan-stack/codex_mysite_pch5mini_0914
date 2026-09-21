@@ -5,7 +5,6 @@ import {checkoutOwnerKey,submissionDefinitelyRejected} from '../../../../lib/che
 import GlobalNavigation from '../../components/global-navigation';
 import CartContent from '../../components/cart-content';
 import {cartQuantity,quoteStamp} from '../../lib/cart.mjs';
-import {addGuestCart} from '../../lib/cart-storage';
 import { useState, useRef, useEffect } from 'react';
 import Taro, { useLoad, useDidShow, useDidHide } from '@tarojs/taro';
 import { View, Text, Button, Picker, Input } from '@tarojs/components';
@@ -47,6 +46,7 @@ export default function Checkout() {
   const verifiedSession=useRef(''), ownerId=useRef(''), routeParams=useRef<any>({});
   useDidHide(()=>{if(!order&&(!token()||verifiedSession.current===token()))Taro.setStorageSync(draftKey.current,{params,cartLines,variant,quantity,addressId:addresses[selected]?.id,note});});
   const restoreAddress=useRef('');
+  const openAddresses=()=>void Taro.navigateTo({url:'/pages/account/index?section=addresses&returnTo=checkout'});
   function normalizeQuantity(value:string){
     try{return String(cartQuantity(value));}catch{return '1';}
   }
@@ -55,6 +55,7 @@ export default function Checkout() {
     incomingQuantityRef.current = p.quantity ? normalizeQuantity(String(p.quantity)) : '1';
   }
   useLoad((p) => {
+    if(p.mode==='cart'&&p.id){void Taro.redirectTo({url:'/pages/detail/index?id='+encodeURIComponent(p.id)+'&kind=products'});return;}
     if(!p.order&&(p.mode!=='cart'||p.selection==='1')&&p.mode!=='points')behavior('checkout_start');
     orderId.current=p.order||'';
     routeParams.current=p;
@@ -161,20 +162,15 @@ export default function Checkout() {
       <Text className="page-title">
         {order
           ? '订单详情'
-          : params.mode==='cart'&&item?'选择商品规格':params.mode === 'cart'&&!cartLines&&!item?'购物车':params.mode === 'points'
+          : params.mode === 'cart'&&!cartLines&&!item?'购物车':params.mode === 'points'
             ? '确认兑换'
             : '确认订单'}
       </Text>
       {params.mode==='cart'&&!item&&!cartLines&&!order&&<CartContent onCheckout={lines=>{behavior('checkout_start');setCartLines(lines);setQuote(null);}}/>}
-      {!token()&&params.mode!=='cart'&&<View className="panel"><Text>可以先选择商品规格，登录后继续下单。</Text><ActionButton onClick={()=>Taro.navigateTo({url:'/pages/login/index'})}>登录后继续</ActionButton></View>}
+      {!token()&&<View className="panel"><Text>请先登录后继续确认订单。</Text><ActionButton onClick={()=>Taro.navigateTo({url:'/pages/login/index'})}>去登录</ActionButton></View>}
       {error && <View className="notice">{error}</View>}
       {pendingSubmission.current&&<View className="notice"><Text>上次提交结果待确认，请先查询，避免重复下单。</Text><ActionButton disabled={busy} onClick={()=>run(async(operation)=>{const pending=pendingSubmission.current;if(!pending)return;const r=await submitPending(pending,operation);pendingSubmission.current=null;Taro.removeStorageSync(operation.ownerKey+':pending');Taro.removeStorageSync(operation.ownerKey);orderId.current=r.id;setOrder(r);setCartLines(null);setQuote(null);})}>查询上次提交结果</ActionButton></View>}
-      {!order&&!(params.mode==='cart'&&item)&&<ActionButton
-        size="mini"
-        onClick={() => Taro.navigateTo({ url: '/pages/account/index?section=addresses' })}
-      >
-        新增 / 编辑收货地址
-      </ActionButton>}
+      {!order&&addresses.length>0&&<ActionButton size="mini" onClick={openAddresses}>管理收货地址</ActionButton>}
       {order ? (
         <>
           <View className="panel">
@@ -320,37 +316,9 @@ export default function Checkout() {
           <>
             <View className="panel">
               {cartLines&&<><Text>已选 {cartLines.length} 个规格</Text><ActionButton size="mini" onClick={()=>{setCartLines(null);setQuote(null);void Taro.redirectTo({url:'/pages/cart/index'});}}>返回购物车</ActionButton></>}
-              {item&&<><Text>{item.title}</Text>
-              <Picker
-                range={variants.map(
-                  (v: any) =>
-                    (v.label||v.key) +
-                    ' · ' +
-                    (params.mode === 'points'
-                      ? v.pointsPrice + '积分'
-                      : v.priceMinor / 100 + ' ' + item.currency),
-                )}
-                value={variant}
-                onChange={(e) => {
-                  setVariant(Number(e.detail.value));
-                  setKey('');setQuote(null);
-                }}
-              >
-                <ActionView className="field-input">
-                  {v ? (v.label||v.key) : '暂无可选规格'}{v&&<Text className="intro">{v.available==null?'库存将在提交时核验':'当前可售 '+v.available+' 件'}</Text>}
-                </ActionView>
-              </Picker>
-              <ActionInput
-                className="field-input"
-                type="number"
-                value={quantity}
-                onInput={(e) => {
-                  setQuantity(e.detail.value);
-                  setKey('');setQuote(null);
-                }}
-              />
-              </>}
-              {!(params.mode==='cart'&&item)&&<Picker
+              {item&&<><Text>{item.title}</Text><View className="field-input"><Text>{v ? (v.label||v.key) : '规格无效'}</Text>{v&&<Text className="intro">{v.available==null?'库存将在提交时核验':'当前可售 '+v.available+' 件'} · 数量 {quantity}</Text>}</View></>}
+              <Text className="checkout-field-label">收货地址</Text>
+              {addresses.length ? <Picker
                 range={addresses.map((a) => a.name + ' · ' + a.street)}
                 value={selected}
                 onChange={(e) => {
@@ -358,10 +326,10 @@ export default function Checkout() {
                   setKey('');setQuote(null);
                 }}
               >
-                <ActionView className="field-input">
-                  {addresses[selected] ? addresses[selected].name+' · '+addresses[selected].phone+' · '+addresses[selected].street : '请先添加收货地址'}
+                <ActionView className="checkout-address-select">
+                  <Text>{addresses[selected]?.name+' · '+addresses[selected]?.phone}</Text><Text className="checkout-address-line">{addresses[selected]?.street}</Text><Text className="checkout-address-arrow">›</Text>
                 </ActionView>
-              </Picker>}
+              </Picker> : <ActionView className="checkout-address-empty" onClick={openAddresses}><View><Text>暂未添加收货地址</Text><Text className="checkout-address-line">新增后将自动带回本订单</Text></View><Text className="checkout-address-add">新增地址 ›</Text></ActionView>}
               <Text className="price">
                 {v
                   ? params.mode === 'points'
@@ -371,11 +339,10 @@ export default function Checkout() {
                       item?.currency
                   : ''}
               </Text>
-              {params.mode==='cart'&&item&&<ActionButton onClick={async()=>{try{const n=cartQuantity(quantity);if(!v)throw Error('请选择规格');const line={productId:item.id,variant:v.key,variantLabel:v.label||'默认规格',quantity:n,title:item.title,imageId:item.imageId,currency:item.currency,priceMinor:v.priceMinor};if(token())await request(base+'cart-add',line);else addGuestCart(line);behavior('cart_add',item.id);await Taro.showToast({title:'已加入购物车'});await Taro.redirectTo({url:'/pages/cart/index'});}catch(e){setError((e as Error).message);}}}>加入购物车</ActionButton>}
-              {!(params.mode==='cart'&&item)&&<><ActionInput className="field-input" placeholder="订单备注（选填）" maxlength={1000} value={note} onInput={e=>{setNote(e.detail.value);setKey('');}}/>
+              <><ActionInput className="field-input" placeholder="订单备注（选填）" maxlength={1000} value={note} onInput={e=>{setNote(e.detail.value);setKey('');}}/>
               {quote&&<View className="panel">{quote.items.map((line:any)=><Text key={line.productId+line.variant}>{line.titleZh} · {cartLines?.find((r:any)=>r.productId===line.productId&&r.variant===line.variant)?.variantLabel||variants.find((r:any)=>r.key===line.variant)?.label||'已选规格'} × {line.quantity} · {(line.unitPrice/100).toFixed(2)}</Text>)}<Text>商品金额：{(quote.subtotal/100).toFixed(2)} {quote.currency}</Text><Text>运费：{(quote.shipping/100).toFixed(2)} {quote.currency}</Text><Text className="detail-price">合计：{(quote.total/100).toFixed(2)} {quote.currency}</Text><Text>支付方式：线下支付</Text></View>}
               {params.mode !== 'points' && !payments.offline && (
-                <Text>现金交易暂未开放</Text>
+                <Text>线下付款暂未开放，请联系管理员。</Text>
               )}
               <ActionButton
                 disabled={
@@ -434,7 +401,7 @@ export default function Checkout() {
                 }
               >
                 {pendingSubmission.current?'查询上次提交结果':params.mode === 'points' ? '确认兑换' : quote?'提交订单 · 线下支付':'核对订单金额'}
-              </ActionButton></>}
+              </ActionButton></>
             </View>
           </>
         )

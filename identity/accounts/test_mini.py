@@ -44,3 +44,27 @@ class MiniTests(TestCase):
   for _ in range(35):
    response=self.client.post('/mini-status',data=json.dumps({}),content_type='application/json',HTTP_AUTHORIZATION='Bearer '+settings.INTERNAL_KEY)
    self.assertEqual(response.status_code,200)
+ def _session(self,user,token='c'*43):
+  from .models import Session
+  from .social import digest
+  from django.utils import timezone
+  from datetime import timedelta
+  Session.objects.create(digest=digest(token),user=user,password_stamp=digest(user.password),expires=timezone.now()+timedelta(hours=1))
+  return token
+ def test_profile_is_limited_to_nickname_and_avatar(self):
+  user=User.objects.create_user(username='profile-user',password='fixture-password')
+  result=mini.save_profile({'session':self._session(user),'nickname':'小树','avatarId':'a0000000-0000-4000-8000-000000000000'})
+  self.assertEqual(result['user']['nickname'],'小树')
+  self.assertEqual(result['user']['avatarId'],'a0000000-0000-4000-8000-000000000000')
+  with self.assertRaises(ValueError):mini.save_profile({'session':self._session(user,'d'*43),'nickname':'x'*25})
+ @patch('accounts.mini.request_json',side_effect=[{'access_token':'platform-token'},{'phone_info':{'purePhoneNumber':'13800138000','countryCode':'86'}},{'access_token':'platform-token'},{'phone_info':{'purePhoneNumber':'13800138000','countryCode':'86'}}])
+ def test_phone_is_encrypted_masked_and_unique(self,platform):
+  user=User.objects.create_user(username='phone-user',password='fixture-password')
+  result=mini.bind_phone({'session':self._session(user),'code':'phone-code'})
+  self.assertTrue(result['user']['phoneVerified'])
+  self.assertEqual(result['user']['phoneMasked'],'***8000')
+  self.assertNotIn('13800138000',str(result))
+  state=user.visitor_state
+  self.assertNotIn('13800138000',state.phone_encrypted)
+  other=User.objects.create_user(username='phone-other',password='fixture-password')
+  with self.assertRaises(ValueError):mini.bind_phone({'session':self._session(other,'e'*43),'code':'another-code'})

@@ -1,6 +1,7 @@
 from datetime import date, datetime, time, timedelta, timezone
 from django.contrib.auth.models import User
 from django.db import transaction
+from django.utils import timezone as django_timezone
 from django.db.models import Q
 from .models import VisitorState, Session, Token, Audit
 
@@ -15,7 +16,7 @@ def registration_source(user,state):
 def profile(user):
     state=VisitorState.objects.filter(user=user).first()
 
-    return {'id':user.pk,'email':user.email,'firstName':user.first_name,'lastName':user.last_name,'verified':user.is_active and not (state and state.sandbox),'enabled':not disabled(user),'created_at':user.date_joined.isoformat(),'lastLogin':user.last_login.isoformat() if user.last_login else None,'country':state.country if state else '', 'city':state.city if state else '', 'company':state.company if state else '', 'registrationSource':registration_source(user,state),'lastLoginMethod':state.last_login_method if state else '', 'sandbox':bool(state and state.sandbox),'providers':list(user.social_identities.values_list('provider',flat=True))}
+    return {'id':user.pk,'email':user.email,'firstName':user.first_name,'lastName':user.last_name,'nickname':state.nickname if state else '', 'avatarId':state.avatar_id if state else '', 'phoneVerified':bool(state and state.phone_verified_at), 'phoneMasked':(('***' + state.phone_last4) if state and state.phone_last4 else ''), 'phoneReviewStatus':(state.phone_review_status if state and state.phone_verified_at else 'not_authorized'), 'verified':user.is_active and not (state and state.sandbox),'enabled':not disabled(user),'created_at':user.date_joined.isoformat(),'lastLogin':user.last_login.isoformat() if user.last_login else None,'country':state.country if state else '', 'city':state.city if state else '', 'company':state.company if state else '', 'registrationSource':registration_source(user,state),'lastLoginMethod':state.last_login_method if state else '', 'sandbox':bool(state and state.sandbox),'providers':list(user.social_identities.values_list('provider',flat=True))}
 
 def list_users(data):
     page=int(data.get('page') or 1);size=int(data.get('size') or 20)
@@ -34,7 +35,7 @@ def list_users(data):
         if mode == 'demo': rows = rows.filter(visitor_state__sandbox=True)
     else:
         rows = rows.exclude(visitor_state__sandbox=True)
-    if query:rows=rows.filter(Q(email__icontains=query)|Q(first_name__icontains=query)|Q(last_name__icontains=query))
+    if query:rows=rows.filter(Q(email__icontains=query)|Q(first_name__icontains=query)|Q(last_name__icontains=query)|Q(visitor_state__phone_last4__icontains=query))
     for key in ('verified','enabled'):
         value=data.get(key,'')
         if value not in ('','true','false'):raise ValueError('筛选值无效')
@@ -52,6 +53,13 @@ def list_users(data):
         if source not in ('email','unknown','google','wechat','facebook'):raise ValueError('注册来源无效')
         if source=='email':rows=rows.filter(visitor_state__registration_source='email')
         else:rows=rows.filter(visitor_state__registration_source=source)
+    review=data.get('phoneReviewStatus','')
+    if review not in ('','unreviewed','approved','follow_up','not_authorized'):raise ValueError('手机号审核状态无效')
+    if review=='not_authorized':rows=rows.filter(visitor_state__phone_verified_at__isnull=True)
+    elif review:rows=rows.filter(visitor_state__phone_verified_at__isnull=False,visitor_state__phone_review_status=review)
+    phone=data.get('phoneVerified','')
+    if phone not in ('','true','false'):raise ValueError('手机号授权筛选无效')
+    if phone:rows=rows.filter(visitor_state__phone_verified_at__isnull=phone=='false')
     start='' if dashboard else data.get('from','');end='' if dashboard else data.get('to','')
     if start and end and start>end:raise ValueError('开始日期不能晚于结束日期')
     if start:rows=rows.filter(date_joined__gte=datetime.combine(date.fromisoformat(start),time.min,tzinfo=timezone.utc))
@@ -87,4 +95,19 @@ def save_profile(data,actor):
     state,_=VisitorState.objects.get_or_create(user=user)
     state.country=country;state.city=city.strip();state.company=company.strip();state.save(update_fields=['country','city','company'])
     Audit.objects.create(actor=actor,action='save-user-profile')
+    return {'ok':True,'user':profile(user)}
+
+@transaction.atomic
+def review_phone(data,actor):
+    status=data.get('status')
+    if status not in ('unreviewed','approved','follow_up'):raise ValueError('手机号审核状态无效')
+    user=User.objects.filter(pk=data.get('id'),is_staff=False,is_superuser=False).first()
+    if not user:raise ValueError('访客不存在')
+    state=VisitorState.objects.filter(user=user,phone_verified_at__isnull=False).first()
+    if not state:raise ValueError('该访客尚未授权手机号')
+    state.phone_review_status=status
+    state.phone_reviewed_at=django_timezone.now()
+    state.phone_reviewed_by=actor
+    state.save(update_fields=['phone_review_status','phone_reviewed_at','phone_reviewed_by'])
+    Audit.objects.create(actor=actor,action='review-user-phone',target=str(user.pk))
     return {'ok':True,'user':profile(user)}

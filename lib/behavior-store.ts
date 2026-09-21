@@ -64,7 +64,7 @@ export async function ingestBehavior(
       .run();
     await db
       .prepare(
-        'INSERT INTO behavior_events(id,channel,visitor_hash,session_hash,event,path,target,created_at) VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(id) DO NOTHING',
+        'INSERT INTO behavior_events(id,channel,visitor_hash,session_hash,event,path,target,share_ref,created_at) VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO NOTHING',
       )
       .bind(
         await hash(channel + ':' + event.visitorId + ':' + event.id),
@@ -74,6 +74,7 @@ export async function ingestBehavior(
         event.event,
         event.path,
         event.target,
+        event.shareRef,
         now,
       )
       .run();

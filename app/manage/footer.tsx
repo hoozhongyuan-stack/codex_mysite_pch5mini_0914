@@ -1,4 +1,5 @@
 'use client';
+import { AdminFormActions } from './admin-dialog';
 import SiteLink from '../../components/site-link';
 
 import { useState } from 'react';
@@ -115,17 +116,6 @@ export default function FooterSettings({ data, reload, onDirty }: any) {
   }
   return (
     <>
-      <div className="heading-row">
-        <h2>页脚设置</h2>
-        <button aria-busy={Boolean(busy)}
-          type="submit"
-          form="footer-settings-form"
-          className="btn primary"
-          disabled={busy}
-        >
-          {busy ? '保存中…' : '保存配置'}
-        </button>
-      </div>
       <form
         id="footer-settings-form"
         className="panel settings-panel footer-settings"
@@ -461,25 +451,14 @@ export default function FooterSettings({ data, reload, onDirty }: any) {
             {form.registrations.map((r: any) => r.label).join('　')}
           </small>
         </section>
-        <div
-          className="footer-save-row"
-          style={{
-            position: 'sticky',
-            bottom: 12,
-            zIndex: 5,
-            background: 'white',
-            padding: 16,
-            border: '1px solid #e1dce9',
-            borderRadius: 10,
-          }}
-        >
+        <AdminFormActions busy={busy} showCancel={false}>
           <button aria-busy={Boolean(busy)} type="submit" className="btn primary" disabled={busy}>
             {busy ? '保存中…' : '保存配置'}
           </button>
           <SiteLink className="btn" href="/zh" target="_blank" rel="noreferrer">
             预览前台 ↗
           </SiteLink>
-        </div>
+        </AdminFormActions>
         {message && (
           <p className="notice" role="status">
             {message}

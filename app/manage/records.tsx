@@ -6,11 +6,12 @@ import VisitorProfile, { sourceLabels } from './visitor-profile';
 import { useState } from 'react';
 import {
   Dialog,
+  AdminFormActions,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog';
+} from './admin-dialog';
 import {
   useList,
   Filters,
@@ -65,7 +66,7 @@ export default function Records({ kind, data }: any) {
       ]
     : isUser
       ? [
-          { key: 'q', label: '姓 / 名 / 邮箱' },
+          { key: 'q', label: '姓名 / 邮箱 / 手机尾号' },
           { key: 'country', label: '国家代码' },
           { key: 'city', label: '城市' },
           { key: 'company', label: '公司名称' },
@@ -83,6 +84,8 @@ export default function Records({ kind, data }: any) {
               ['false', '未验证'],
             ],
           },
+          { key: 'phoneVerified', label: '手机号授权', options: [['', '全部'], ['true', '已授权'], ['false', '未授权']] },
+          { key: 'phoneReviewStatus', label: '手机号审核', options: [['', '全部'], ['unreviewed', '待审核'], ['approved', '已确认'], ['follow_up', '需跟进'], ['not_authorized', '未授权']] },
           {
             key: 'enabled',
             label: '账号状态',
@@ -212,7 +215,7 @@ export default function Records({ kind, data }: any) {
             {isSub
               ? '查看访客提交，跟进处理进度。'
               : isUser
-                ? '邮箱验证与账号启停分别管理。'
+                ? '手机号仅显示脱敏号码；授权资料不可在后台修改或导出。'
                 : '只读审计记录；不展示密码、授权码或提交内容。'}
           </p>
         </div>
@@ -275,7 +278,7 @@ export default function Records({ kind, data }: any) {
                       '提交时间',
                     ]
                   : isUser
-                    ? ['姓名', '邮箱', '邮箱验证', '账号状态', '注册时间']
+                    ? ['姓名', '邮箱', '手机号', '授权状态', '账号状态', '注册时间']
                     : ['操作人', '操作类型', '对象', '记录时间']
                 ).map((h) => (
                   <th key={h}>{h}</th>
@@ -343,7 +346,8 @@ export default function Records({ kind, data }: any) {
                             </small>
                           )}
                         </td>
-                        <td>{r.verified ? '已验证' : '未验证'}</td>
+                        <td>{r.phoneMasked || '—'}</td>
+                        <td>{r.phoneVerified ? '已授权' : '未授权'}<small className="muted">{r.phoneReviewStatus === 'approved' ? ' · 已确认' : r.phoneReviewStatus === 'follow_up' ? ' · 需跟进' : r.phoneReviewStatus === 'unreviewed' ? ' · 待审核' : ''}</small></td>
                         <td>
                           <span
                             className={'pill ' + (r.enabled ? 'green' : 'gray')}
@@ -544,9 +548,9 @@ export default function Records({ kind, data }: any) {
                     <span>新增内部备注</span>
                     <textarea name="note" maxLength={2000} rows={3} />
                   </label>
-                  <button aria-busy={Boolean(busy)} className="btn primary" disabled={busy}>
+                  <AdminFormActions busy={busy}><button aria-busy={Boolean(busy)} className="btn primary" disabled={busy}>
                     保存处理记录
-                  </button>
+                  </button></AdminFormActions>
                 </form>
                 <h3>处理历史</h3>
                 {detail.history.length ? (

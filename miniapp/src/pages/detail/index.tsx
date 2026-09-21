@@ -2,22 +2,23 @@ import {ActionButton,ActionView} from '../../components/interaction';
 import './detail-sample.scss';
 import {behavior,choiceKey} from '../../lib/behavior';
 import { useEffect, useRef, useState } from 'react';
-import Taro, { useLoad, useDidShow, useShareAppMessage, useDidHide } from '@tarojs/taro';
-import { View, Text, Image, Button, Picker } from '@tarojs/components';
+import Taro, { useLoad, useDidShow, useShareAppMessage, useShareTimeline, useDidHide } from '@tarojs/taro';
+import { View, Text, Image, Button } from '@tarojs/components';
 import { request, image, configuration, token } from '../../lib/api';
 import Floating from '../../components/floating';
 import RichBody from '../../components/rich-body';
 import GlobalNavigation from '../../components/global-navigation';
-import { guestCart } from '../../lib/cart-storage';
+import { guestCart, addGuestCart } from '../../lib/cart-storage';
 import { publicationLabel } from '../../../../lib/mini-content.mjs';
 import { cartQuantity } from '../../lib/cart.mjs';
+import { publicDetailShare } from '../../lib/share.mjs';
 export default function Detail() {
   const [item,setItem]=useState<any>(null), [error,setError]=useState(''),
     [loading,setLoading]=useState(true), [loadError,setLoadError]=useState(''),
     [imageError,setImageError]=useState(false), [imageAttempt,setImageAttempt]=useState(0),
     [floating,setFloating]=useState<any[]>([]), [mode,setMode]=useState('cash'),
     [variantIndex,setVariantIndex]=useState(0), [quantity,setQuantity]=useState('1'),
-    [cartCount,setCartCount]=useState(0), [actions,setActions]=useState<string[]>([]), [busy,setBusy]=useState(false), [fullscreen,setFullscreen]=useState(false);
+    [cartCount,setCartCount]=useState(0), [actions,setActions]=useState<string[]>([]), [busy,setBusy]=useState(false), [fullscreen,setFullscreen]=useState(false), [skuOpen,setSkuOpen]=useState(false), [skuIntent,setSkuIntent]=useState<'cart'|'buy'|'redeem'>('buy');
   const visible=useRef(true);useDidShow(()=>{visible.current=true});useDidHide(()=>{visible.current=false});
   useEffect(()=>{if(item?.kind!=='articles')return;let elapsed=0;const timer=setInterval(()=>{if(visible.current&&Taro.getStorageSync(choiceKey)==='accepted')elapsed++;if(elapsed>=10){behavior('article_read',item.id);clearInterval(timer);}},1000);return()=>clearInterval(timer);},[item?.id]);
   const pending=useRef<{action:string;active:boolean}|null>(null), lock=useRef(false);
@@ -74,14 +75,17 @@ export default function Detail() {
     if(current)void request('/api/mini/member/cart').then(r=>{if(token()===current)setCartCount((r.rows||[]).reduce((n:number,r:any)=>n+r.quantity,0))}).catch(()=>setCartCount(0));
     else setCartCount(guestCart().reduce((n:number,r:any)=>n+r.quantity,0));
     if(!item){if(pending.current&&token())pending.current=null;return;}
+    const deferred=Taro.getStorageSync('mini-pending-product-action');
+    if(current&&deferred?.id===item.id){Taro.removeStorageSync('mini-pending-product-action');setSkuIntent(deferred.intent==='cart'?'cart':deferred.intent==='redeem'?'redeem':'buy');setSkuOpen(true);}
     if(pending.current&&token()){const next=pending.current;pending.current=null;void interact(next.action,next.active)}
     else {pending.current=null;void state(item)}
   });
-  useShareAppMessage(()=>({title:item?.title||'分享内容',path:'/pages/detail/index?kind='+(item?.kind||'articles')+'&id='+encodeURIComponent(item?.id||'')+'&mode='+mode}));
+  useShareAppMessage(()=>publicDetailShare(item,'分享内容'));
+  useShareTimeline(()=>publicDetailShare(item,'分享内容'));
   async function interact(action:string,active=true){
     if(!item||lock.current)return;
+    if(action==='share'){behavior('share',item.id);return;}
     if(!token()){
-      if(action==='share')return;
       pending.current={action,active};
       const result=await Taro.showModal({title:'登录后继续',content:action==='like'?'登录后即可点赞这篇内容':'登录后即可将内容加入收藏',confirmText:'去登录',cancelText:'继续浏览'});
       if(result.confirm)await Taro.navigateTo({url:'/pages/login/index'});else pending.current=null;
@@ -96,6 +100,29 @@ export default function Detail() {
       if(r.earned>0)void Taro.showToast({title:'获得 '+r.earned+' 积分',icon:'none'});
     }catch(e){if(token()===session)setError((e as Error).message)}finally{lock.current=false;setBusy(false)}
   }
+  async function startPurchase(intent:'cart'|'buy'|'redeem'){
+    if(!item||!variantKey)return;
+    if(intent==='buy'&&!token()){
+      Taro.setStorageSync('mini-pending-product-action',{id:item.id,intent});
+      const result=await Taro.showModal({title:'登录后继续',content:'登录后可选择规格并提交订单',confirmText:'去登录',cancelText:'继续浏览'});
+      if(result.confirm)await Taro.navigateTo({url:'/pages/login/index'});
+      else Taro.removeStorageSync('mini-pending-product-action');
+      return;
+    }
+    setSkuIntent(intent);setSkuOpen(true);
+  }
+  async function confirmSku(){
+    if(!item||!variantKey)return;
+    const amount=normalizeQuantity(quantity), line={productId:item.id,variant:variantKey,variantLabel:selectedVariant?.label||'默认规格',quantity:Number(amount),title:item.title,imageId:item.imageId,currency:item.currency,priceMinor:selectedVariant?.priceMinor};
+    try{
+      if(skuIntent==='cart'){
+        if(token()) await request('/api/mini/member/cart-add',line,token()); else addGuestCart(line);
+        behavior('cart_add',item.id);setSkuOpen(false);await Taro.showToast({title:'已加入购物车',icon:'success'});return;
+      }
+      setSkuOpen(false);
+      await Taro.navigateTo({url:'/pages/checkout/index?id='+item.id+'&mode='+(skuIntent==='redeem'?'points':'cash')+'&variant='+encodeURIComponent(variantKey)+'&quantity='+encodeURIComponent(amount)});
+    }catch(e){setError((e as Error).message);}
+  }
   const active=item?.kind==='articles'?'articles':mode==='points'?'points':'products';
   return <View className={"detail has-nav detail-sample"+(mode==='points'?' points-detail':'')}>
     {!item?(loading?<View className="detail-loading" ariaLabel="正在加载详情">
@@ -103,7 +130,7 @@ export default function Detail() {
       <View className="content"><View className="detail-skeleton detail-skeleton-title"/><View className="detail-skeleton detail-skeleton-line"/><View className="detail-skeleton detail-skeleton-line short"/><Text className="detail-loading-label">正在加载详情…</Text></View>
     </View>:<View className="detail-load-error"><Text>暂时无法加载内容</Text><Text className="detail-error-message">{loadError}</Text><ActionButton  onClick={()=>void loadContent()}>重新加载</ActionButton></View>):<>
       {item.imageId&&<View className="detail-media">
-        {imageError?<View className="detail-image-error"><Text>图片暂未加载</Text><ActionButton  onClick={()=>{setImageAttempt(value=>value+1);setImageError(false)}}>重试图片</ActionButton></View>:<Image key={imageAttempt} className="hero" mode="aspectFit" src={image(item.imageId)} onError={()=>setImageError(true)} ariaLabel={item.title}/>}
+        {imageError?<View className="detail-image-error"><Text>图片暂未加载</Text><ActionButton  onClick={()=>{setImageAttempt(value=>value+1);setImageError(false)}}>重试图片</ActionButton></View>:<Image key={imageAttempt} className="hero" mode="aspectFit" src={image(item.imageId,'hero')} onError={()=>setImageError(true)} ariaLabel={item.title}/>}
       </View>}
       <View className="content">
         <Text className="page-title">{item.title}</Text>
@@ -112,24 +139,18 @@ export default function Detail() {
         {error&&<View className="notice">{error}</View>}
         {item.kind==='products'&&<View className="product-purchase-inline">
           <View className="product-price-row"><Text className="detail-price">{mode==='points'?(item.points?item.points+' 积分起':'暂不可兑换'):item.price!==null?(item.currency==='CNY'?'¥':item.currency+' ')+(item.price/100).toFixed(2)+' 起':'价格待定'}</Text>
-            {mode!=='points'&&<ActionButton  className="cart-link" ariaLabel={'查看购物车，共'+cartCount+'件'} onClick={()=>Taro.navigateTo({url:'/pages/cart/index'})}><View className="cart-bag-icon"/><Text>{cartCount>99?'99+':cartCount}</Text></ActionButton>}
+            {mode!=='points'&&<ActionButton className="cart-link" ariaLabel={'查看购物车，共'+cartCount+'件'} onClick={()=>Taro.navigateTo({url:'/pages/cart/index'})}><View className="cart-bag-icon"/><Text>{cartCount>99?'99+':cartCount}</Text></ActionButton>}
           </View>
           <View className="product-purchase-actions">
-            {item.kind==='products'&&hasVariants&&<Picker range={variants.map((v:any)=>v.label||v.key)} value={variantIndex} onChange={(e)=>{
-              const nextIndex=Number(e.detail.value);setVariantIndex(Number.isNaN(nextIndex)?0:nextIndex);}}>
-              <ActionView hoverClass="detail-field-pressed" className="field-input">已选规格：{selectedVariant?.label || '默认规格'}</ActionView>
-            </Picker>}
-            {item.kind==='products'&&hasVariants&&<Picker range={['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20']} value={Math.max(0,Number(quantity)-1)} onChange={(e)=>setQuantity(normalizeQuantity(String(Math.max(1,Number(e.detail.value)+1))))}>
-              <ActionView hoverClass="detail-field-pressed" className="field-input">数量：{quantity}</ActionView>
-            </Picker>}
-            {mode!=='points'&&<ActionButton  className="secondary" disabled={!item.kind||!variantKey} onClick={()=>Taro.navigateTo({url:'/pages/checkout/index?id='+item.id+'&mode=cart&variant='+encodeURIComponent(variantKey)+'&quantity='+encodeURIComponent(quantity)})}>加入购物车</ActionButton>}
-            <ActionButton  disabled={!item.kind||!variantKey} onClick={()=>Taro.navigateTo({url:'/pages/checkout/index?id='+item.id+'&mode='+mode+'&variant='+encodeURIComponent(variantKey)+'&quantity='+encodeURIComponent(quantity)})}>{mode==='points'?'选择规格并兑换':'立即购买'}</ActionButton>
+            {mode!=='points'&&<ActionButton className="secondary" disabled={!variantKey} onClick={()=>void startPurchase('cart')}>加入购物车</ActionButton>}
+            <ActionButton disabled={!variantKey} onClick={()=>void startPurchase(mode==='points'?'redeem':'buy')}>{mode==='points'?'选择规格并兑换':'立即购买'}</ActionButton>
           </View>
         </View>}
+        {skuOpen&&<ActionView className="sku-mask" onClick={()=>setSkuOpen(false)}><ActionView className="sku-drawer" onClick={(e:any)=>e.stopPropagation()}><View className="sku-drawer-heading"><Text>选择规格</Text><ActionButton className="sku-close" onClick={()=>setSkuOpen(false)}>关闭</ActionButton></View><Text className="sku-product-title">{item.title}</Text><View className="sku-options">{variants.map((v:any,i:number)=><ActionButton key={v.key} className={i===variantIndex?'selected':''} disabled={v.available===0} onClick={()=>setVariantIndex(i)}>{v.label||'默认规格'}{v.available!=null?' · 可售 '+v.available+' 件':''}</ActionButton>)}</View><View className="sku-quantity"><Text>数量</Text><View><ActionButton onClick={()=>setQuantity(normalizeQuantity(String(Math.max(1,Number(quantity)-1))))}>−</ActionButton><Text>{quantity}</Text><ActionButton onClick={()=>setQuantity(normalizeQuantity(String(Number(quantity)+1)))}>＋</ActionButton></View></View><Text className="sku-total">{mode==='points'?selectedVariant?.pointsPrice+' 积分':selectedVariant?.priceMinor!=null?'¥'+(selectedVariant.priceMinor*Number(quantity)/100).toFixed(2):'价格待定'}</Text><ActionButton className="sku-confirm" disabled={!variantKey} onClick={()=>void confirmSku()}>{skuIntent==='cart'?'加入购物车':skuIntent==='redeem'?'确认兑换':'确认购买'}</ActionButton></ActionView></ActionView>}
         {(item.specs||[]).map((s:any)=><View className="spec" key={s.name}><Text>{s.name}</Text><Text>{s.values.join(' / ')}</Text></View>)}
         {item.kind==='products'&&<Text className="section-title">商品详情</Text>}
         <>{item.richNodes?.length?<RichBody nodes={item.richNodes} onFullscreen={setFullscreen}/>:<Text className="body" selectable>{item.body}</Text>}</>
-        {(item.imageIds||[]).filter((id:string)=>id!==item.imageId).map((id:string)=><Image key={id} className="body-image" src={image(id)} mode="widthFix"/>)}
+        {(item.imageIds||[]).filter((id:string)=>id!==item.imageId).map((id:string)=><Image key={id} className="body-image" src={image(id)} mode="widthFix" lazyLoad/>)}
         <View className="content-interactions">
           <ActionButton  openType="share" onClick={()=>void interact('share')}>转发</ActionButton>
           <ActionButton  disabled={busy} className={actions.includes('like')?'selected':''} onClick={()=>void interact('like',!actions.includes('like'))}>{actions.includes('like')?'已点赞':'点赞'}</ActionButton>

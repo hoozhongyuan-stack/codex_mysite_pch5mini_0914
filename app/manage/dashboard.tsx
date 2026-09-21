@@ -90,7 +90,7 @@ function Trend({ title, items }: any) {
           <details>
             <summary>查看每日数据</summary>
             <div className="dash-scroll">
-              <table>
+              <table className="list-table">
                 <thead>
                   <tr>
                     <th>日期</th>
@@ -215,7 +215,7 @@ function Overview() {
               : '尚未读取'}
         </span>
       </header>
-      <form className="dash-filters" onSubmit={apply}>
+      <form className="admin-filter-bar dash-filters" onSubmit={apply}>
         <div className="dash-presets">
           {[
             ['今天', 1],
@@ -470,7 +470,7 @@ function Overview() {
               </h2>
               {trade?.available ? (
                 trade.ranking.length ? (
-                  <table>
+                  <table className="list-table">
                     <thead>
                       <tr>
                         <th>商品</th>

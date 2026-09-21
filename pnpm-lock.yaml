@@ -89,6 +89,9 @@ importers:
       shadcn:
         specifier: 4.18.0
         version: 4.18.0(supports-color@10.2.2)(typescript@5.9.3)
+      sharp:
+        specifier: 0.35.0
+        version: 0.35.0
       tailwind-merge:
         specifier: 3.6.0
         version: 3.6.0

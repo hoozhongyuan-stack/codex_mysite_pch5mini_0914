@@ -3,6 +3,8 @@ import SiteLink from '../../components/site-link';
 
 import { useState, useEffect } from 'react';
 import RichEditor from './rich-editor';
+import { useAdminDetail } from './admin-navigation';
+import { AdminDetailState, AdminPageHeader } from './admin-ui';
 import {displayVideoBody} from '@/lib/video-body.mjs';
 import './marketing-workspace.css';
 import VideoSourcePicker from './video-source-picker';
@@ -11,10 +13,12 @@ import { Field, Choice } from './shared';
 import AssetPicker from './asset-picker';
 import {
   Dialog,
+  AdminFormActions,
+  useDialogChangeRevision,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from './admin-dialog';
 export async function videoApi(action: string, data: any = {}, post = false) {
   const r = await fetch(
     '/api/video/' + action + (post ? '' : '?' + new URLSearchParams(data)),
@@ -44,13 +48,15 @@ const jobNames: any = {
 export default function VideoSeries({ data }: any) {
   const [result, setResult] = useState<any>({ rows: [], pages: 1 }),
     [filters, setFilters] = useState({ q: '', status: '', type: '', page: 1 }),
-    [detail, setDetail] = useState<any>(null),
     [edit, setEdit] = useState<any>(null),
     [picker, setPicker] = useState(false),
     [sourcePicker, setSourcePicker] = useState(false),
     [savedNotice, setSavedNotice] = useState(''),
     [busy, setBusy] = useState(false),
     [error, setError] = useState('');
+  const detailRoute = useAdminDetail<any>('series', id => videoApi('admin-detail', {id}));
+  const detail = detailRoute.value;
+  const setDetail = detailRoute.setValue;
   const reload = async (id = detail?.series.id) => {
     if (id) setDetail(await videoApi('admin-detail', { id }));
     else setResult(await videoApi('admin-list', filters));
@@ -77,7 +83,8 @@ export default function VideoSeries({ data }: any) {
       setBusy(false);
     }
   };
-  const set = (k: string, v: any) => setEdit((e: any) => ({ ...e, [k]: v }));
+  const [editRevision, markEdited] = useDialogChangeRevision();
+  const set = (k: string, v: any) => { markEdited(); setEdit((e: any) => ({ ...e, [k]: v })); };
   const openEdit = (value: any) => {
     setError('');
     setSavedNotice('');
@@ -98,39 +105,17 @@ export default function VideoSeries({ data }: any) {
       preview: false,
       seriesId: detail?.series.id,
     });
+  if (detailRoute.loading || detailRoute.error) return <AdminDetailState loading={detailRoute.loading} error={detailRoute.error} onBack={detailRoute.close} onRetry={detailRoute.retry}/>;
   return (
     <section className="video-admin">
-      <div className="section-head">
-        <div>
-          <SiteLink className="muted" href="/admin?view=marketing">
-            营销
-          </SiteLink>
-          <h1>{detail ? detail.series.titleZh : '视频专栏'}</h1>
-        </div>
-        <div className="flex-actions">
-          {detail && (
-            <button
-              className="btn"
-              onClick={() => {
-                setDetail(null);
-                reload(null);
-              }}
-            >
-              <ArrowLeft size={16} />
-              返回系列
-            </button>
-          )}
-          <button className="btn primary" onClick={() => newItem(!!detail)}>
-            <Plus size={16} />
-            {detail ? '新增视频' : '新建系列'}
-          </button>
-        </div>
-      </div>
+      <AdminPageHeader title={detail ? detail.series.titleZh : '视频专栏'} onBack={detail ? detailRoute.close : undefined} backLabel="返回系列" actions={<button className="btn primary" onClick={() => newItem(!!detail)}><Plus size={16}/>{detail ? '新增视频' : '新建系列'}</button>}/>
+      <details className="admin-help"><summary>上传要求与播放说明</summary>
       <p role="status" className="notice">
         视频保存在私有目录，上传后由 FFmpeg
         处理。仅支持视频，不支持配套附件。受保护播放提高复制门槛，无法杜绝录屏。单文件最大
         1 GB，最长 4 小时。
       </p>
+      </details>
       {savedNotice && (
         <p className="notice" role="status">
           {savedNotice}
@@ -144,7 +129,7 @@ export default function VideoSeries({ data }: any) {
       {!detail ? (
         <>
           <form
-            className="field-grid"
+            className="admin-filter-bar"
             onSubmit={(e) => {
               e.preventDefault();
               reload(null);
@@ -213,7 +198,7 @@ export default function VideoSeries({ data }: any) {
                       <div className="flex-actions">
                         <button
                           className="btn"
-                          onClick={() => run(() => reload(s.id))}
+                          onClick={() => detailRoute.open(s.id)}
                         >
                           视频与统计
                         </button>
@@ -383,9 +368,9 @@ export default function VideoSeries({ data }: any) {
         </>
       )}
       {edit && (
-        <Dialog open onOpenChange={(o) => !o && !busy && setEdit(null)}>
+        <Dialog changeRevision={editRevision} open onOpenChange={(o) => !o && !busy && setEdit(null)}>
           <DialogContent
-            style={{ maxWidth: 850, maxHeight: '90vh', overflow: 'auto' }}
+            size="lg"
           >
             <DialogHeader>
               <DialogTitle>
@@ -540,19 +525,20 @@ export default function VideoSeries({ data }: any) {
                     {error}
                   </p>
                 )}
-                <button aria-busy={Boolean(busy)} className="btn primary" disabled={busy}>
+                <AdminFormActions busy={busy}><button aria-busy={Boolean(busy)} className="btn primary" disabled={busy}>
                   {busy
                     ? '保存中…'
                     : edit.episode && !edit.ready
                       ? '保存草稿'
                       : '保存'}
-                </button>
+                </button></AdminFormActions>
               </fieldset>
             </form>
             {sourcePicker && (
               <VideoSourcePicker
                 data={data}
                 onSelect={(source: any) => {
+                  markEdited();
                   setEdit((e: any) => ({
                     ...e,
                     sourceId: source.id,

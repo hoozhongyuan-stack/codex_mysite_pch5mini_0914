@@ -3,6 +3,8 @@ import Link from '../../components/site-link';
 import { useEffect, useState } from 'react';
 import { marketingApi, Pager } from './marketing-shared';
 import SalonDetail from './salon-detail';
+import { useAdminDetail, useAdminSearch, navigateAdmin } from './admin-navigation';
+import { AdminDetailState, AdminPageHeader } from './admin-ui';
 import './marketing-workspace.css';
 import { CalendarDays, ArrowLeft, Film, ClipboardList, Gift } from 'lucide-react';
 import { Field, Choice } from './shared';
@@ -19,10 +21,12 @@ import {
 } from '@/components/ui/table';
 import {
   Dialog,
+  AdminFormActions,
+  useDialogChangeRevision,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from './admin-dialog';
 const statuses = [
   ['draft', '草稿'],
   ['published', '已发布'],
@@ -91,8 +95,7 @@ const newEvent = () => {
 };
 export default function Marketing({ data }: any) {
   const can = (permission: string) => data.user.role === 'owner' || data.user.permissions?.includes('marketing.' + permission) === true;
-  const [entered, setEntered] = useState(false),
-    [result, setResult] = useState<any>({ rows: [] }),
+  const [result, setResult] = useState<any>({ rows: [] }),
     [filters, setFilters] = useState({
       q: '',
       status: '',
@@ -102,12 +105,16 @@ export default function Marketing({ data }: any) {
       pageSize: 20,
     }),
     [edit, setEdit] = useState<any>(null),
-    [detail, setDetail] = useState<any>(null),
     [picker, setPicker] = useState(false),
     [error, setError] = useState(''),
     [busy, setBusy] = useState(false),
     [selected, setSelected] = useState<string[]>([]),
     [batchResults, setBatchResults] = useState<any[]>([]);
+  const search = useAdminSearch();
+  const entered = !!(new URLSearchParams(search).get('salons') || new URLSearchParams(search).get('salon'));
+  const detailRoute = useAdminDetail<any>('salon', id => marketingApi('admin-detail', {id}));
+  const detail = detailRoute.value;
+  const setDetail = detailRoute.setValue;
   const reload = async () => {
     setResult(await marketingApi('admin-list', filters));
     setSelected([]);
@@ -142,7 +149,8 @@ export default function Marketing({ data }: any) {
       if (operation !== 'export') await reload();
     });
   }
-  const set = (k: string, v: any) => setEdit((s: any) => ({ ...s, [k]: v }));
+  const [editRevision, markEdited] = useDialogChangeRevision();
+  const set = (k: string, v: any) => { markEdited(); setEdit((s: any) => ({ ...s, [k]: v })); };
   if (!entered)
     return (
       <section className="marketing-workspace">
@@ -180,7 +188,7 @@ export default function Marketing({ data }: any) {
           {can('view') && (
             <button
               className="panel marketing-activity"
-              onClick={() => setEntered(true)}
+              onClick={() => navigateAdmin({salons:'1'})}
             >
               <CalendarDays size={32} />
               <h2>沙龙会</h2>
@@ -191,6 +199,7 @@ export default function Marketing({ data }: any) {
         </div>
       </section>
     );
+  if (detailRoute.loading || detailRoute.error) return <AdminDetailState loading={detailRoute.loading} error={detailRoute.error} onBack={detailRoute.close} onRetry={detailRoute.retry}/>;
   if (detail)
     return (
       <SalonDetail
@@ -198,7 +207,7 @@ export default function Marketing({ data }: any) {
         role={data.user.role}
         permissions={data.user.permissions || []}
         onBack={() => {
-          setDetail(null);
+          detailRoute.close();
           reload().catch((e) => setError(e.message));
         }}
         onReload={async () =>
@@ -208,19 +217,14 @@ export default function Marketing({ data }: any) {
     );
   return (
     <section className="marketing-workspace">
-      <div className="section-head">
-        <h1>沙龙会</h1>
-        {can('manage')&&<button className="btn primary" onClick={() => setEdit(newEvent())}>
-          ＋ 新建活动
-        </button>}
-      </div>
+      <AdminPageHeader title="沙龙会" onBack={()=>navigateAdmin({salons:'',salon:'',salonTab:''})} backLabel="营销中心" actions={can('manage')&&<button className="btn primary" onClick={() => setEdit(newEvent())}>新建活动</button>}/>
       {error && (
         <p className="error" role="alert">
           {error}
         </p>
       )}
       <form
-        className="flex-actions"
+        className="admin-filter-bar"
         onSubmit={(e) => {
           e.preventDefault();
           reload().catch((e) => setError(e.message));
@@ -340,13 +344,7 @@ export default function Marketing({ data }: any) {
                     <button
                       className="btn"
                       onClick={() =>
-                        run(async () =>
-                          setDetail(
-                            await marketingApi('admin-detail', {
-                              id: event.id,
-                            }),
-                          ),
-                        )
+                        detailRoute.open(event.id)
                       }
                     >
                       报名与统计
@@ -379,9 +377,9 @@ export default function Marketing({ data }: any) {
         />
       </div>
       {edit && can('manage') && (
-        <Dialog open onOpenChange={(o) => !o && setEdit(null)}>
+        <Dialog changeRevision={editRevision} open onOpenChange={(o) => !o && !busy && setEdit(null)}>
           <DialogContent
-            style={{ maxWidth: 1000, maxHeight: '90vh', overflow: 'auto' }}
+            size="editor"
           >
             <DialogHeader>
               <DialogTitle>{edit.id ? '编辑活动' : '新建活动'}</DialogTitle>
@@ -515,9 +513,9 @@ export default function Marketing({ data }: any) {
                 fields={edit.fields}
                 onChange={(v: any) => set('fields', v)}
               />
-              <button aria-busy={Boolean(busy)} className="btn primary" disabled={busy}>
+              <AdminFormActions busy={busy}><button aria-busy={Boolean(busy)} className="btn primary" disabled={busy}>
                 {busy ? '保存中…' : '保存活动'}
-              </button>
+              </button></AdminFormActions>
             </form>
             {picker && (
               <AssetPicker

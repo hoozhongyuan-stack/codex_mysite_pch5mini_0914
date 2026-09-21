@@ -1,12 +1,8 @@
-.account-access-tabs{display:flex;gap:8px;margin:16px 0}
 .account-access .account-table{overflow:auto}
 .account-access table{width:100%;border-collapse:collapse;text-align:left;font-size:13px}
 .account-access td,.account-access th{padding:12px;border-bottom:1px solid #e9e9ef;vertical-align:top}
 .account-access small{display:block;margin-top:4px;color:#747486}
 .account-access .account-link{background:none;border:0;padding:0;color:#6156cd;text-align:left;cursor:pointer;word-break:break-all}
-.account-access .account-log-filters{display:flex;flex-wrap:wrap;align-items:end;gap:10px;margin:16px 0}
-.account-access .account-log-filters label{display:flex;flex-direction:column;gap:5px;font-size:12px}
-.account-access .account-log-filters input,.account-access .account-log-filters select{height:34px;border:1px solid #dddde7;border-radius:6px;padding:5px 8px;max-width:240px}
 .account-access pre{font-size:12px;white-space:pre-wrap;max-width:320px;overflow-wrap:anywhere}
 .account-access .account-groups{display:flex;flex-wrap:wrap;gap:12px;margin:12px 0}
 .account-access .account-groups label{display:flex;align-items:center;gap:6px}

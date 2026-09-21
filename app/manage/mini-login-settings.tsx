@@ -1,10 +1,13 @@
 'use client';
+import { AdminFormActions } from './admin-dialog';
 import { useEffect, useState } from 'react';
 import { Field } from './shared';
+import ActionFeedback from './action-feedback';
 export default function MiniLoginSettings() {
   const [config, setConfig] = useState<any>(null),
     [secret, setSecret] = useState(''),
     [message, setMessage] = useState(''),
+    [tone, setTone] = useState<'success'|'error'|'info'>('info'),
     [busy, setBusy] = useState(false);
   useEffect(() => {
     fetch('/api/identity-admin/mini')
@@ -13,7 +16,7 @@ export default function MiniLoginSettings() {
         if (!r.ok) throw Error(d.error);
         setConfig(d);
       })
-      .catch((e) => setMessage(e.message));
+      .catch((e) => { setTone('error'); setMessage(e.message); });
   }, []);
   if (!config) return <p>{message || '读取登录配置…'}</p>;
   return (
@@ -50,14 +53,14 @@ export default function MiniLoginSettings() {
         />{' '}
         启用微信小程序登录
       </label>
-      <div className="flex-actions">
+      <AdminFormActions busy={busy} showCancel={false}>
         <button aria-busy={Boolean(busy)}
           type="button"
           className="btn primary"
           disabled={busy}
           onClick={async () => {
             setBusy(true);
-            setMessage('');
+            setMessage('');setTone('info');
             try {
               const r = await fetch('/api/identity-admin/mini-save', {
                 method: 'POST',
@@ -68,9 +71,9 @@ export default function MiniLoginSettings() {
               if (!r.ok) throw Error(d.error);
               setConfig(d);
               setSecret('');
-              setMessage('登录配置已保存');
+              setTone('success');setMessage('登录配置已保存');
             } catch (e) {
-              setMessage((e as Error).message);
+              setTone('error');setMessage((e as Error).message);
             } finally {
               setBusy(false);
             }
@@ -78,8 +81,8 @@ export default function MiniLoginSettings() {
         >
           保存登录配置
         </button>
-        <span role="status">{message}</span>
-      </div>
+      </AdminFormActions>
+      <ActionFeedback message={message} tone={tone} clear={()=>setMessage('')}/>
     </section>
   );
 }

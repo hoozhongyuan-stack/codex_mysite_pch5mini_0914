@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog';
+} from './admin-dialog';
 async function request(action: string, data: any = {}, post = false) {
   const r = await fetch(
     '/api/video/admin-' +
@@ -142,7 +142,7 @@ export function VideoSourceLibrary({ data, onSelect, onClose, onBusy }: any) {
         </p>
       )}
       {preview&&<Dialog open onOpenChange={open=>!open&&setPreview(null)}>
-        <DialogContent className="source-preview-dialog"><DialogHeader><DialogTitle>{preview.name}</DialogTitle><DialogDescription>私有视频预览</DialogDescription></DialogHeader>
+        <DialogContent size="lg" className="source-preview-dialog"><DialogHeader><DialogTitle>{preview.name}</DialogTitle><DialogDescription>私有视频预览</DialogDescription></DialogHeader>
           <video key={preview.id} controls playsInline preload="metadata" src={sourcePreviewUrl(preview.id)} onError={()=>setError('此视频暂无法播放，请检查素材格式或稍后重试')}/>
         </DialogContent>
       </Dialog>}
@@ -318,8 +318,8 @@ export function VideoSourceLibrary({ data, onSelect, onClose, onBusy }: any) {
 export default function VideoSourcePicker(props: any) {
   const [uploading, setUploading] = useState(false);
   return (
-    <Dialog open onOpenChange={(o) => !o && !uploading && props.onClose()}>
-      <DialogContent className="private-video-picker">
+    <Dialog guardChanges={false} open onOpenChange={(o) => !o && !uploading && props.onClose()}>
+      <DialogContent size="media" className="private-video-picker">
         <DialogHeader>
           <DialogTitle>选择视频素材</DialogTitle>
           <DialogDescription>

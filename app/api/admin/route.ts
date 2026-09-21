@@ -41,6 +41,7 @@ export async function GET() {
         siteSettings(),
       ]);
     const owner = user.role === 'owner';
+    const can = (key: string) => owner || user.permissions.includes(key);
     const { commerceConfig } = await import('@/lib/orders');
     const legacyOrders = (await commerceConfig()).grants?.[user.email.toLowerCase()] || [];
     const operationPermissions = [...new Set([...user.permissions, ...legacyOrders.map((p: string) => 'orders.' + p)])];
@@ -56,19 +57,19 @@ export async function GET() {
       : [[], [], [], [], [], []];
     return Response.json(
       {
-        contents: contents.map((r) => ({
+        contents: (can('content.view') ? contents : []).map((r) => ({
           ...JSON.parse(r.data),
           id: r.id,
           updatedAt: r.updated_at,
         })),
-        assets,
-        categories: categories.map((r) => ({ ...JSON.parse(r.data), ...r })),
-        folders,
-        navigation: navigation.map((r) => ({
+        assets: can('assets.view') ? assets : [],
+        categories: (can('content.view') ? categories : []).map((r) => ({ ...JSON.parse(r.data), ...r })),
+        folders: can('assets.view') ? folders : [],
+        navigation: (can('configuration.manage') ? navigation : []).map((r) => ({
           ...JSON.parse(r.data),
           id: r.id,
         })),
-        settings,
+        settings: can('configuration.manage') ? settings : {},
         pendingCounts: owner ? {
           orders: (await db.prepare("SELECT sandbox,status,COUNT(*) AS count FROM orders WHERE status IN ('pending_review','aftersale') GROUP BY sandbox,status").all()).results,
           submissions: (await db.prepare("SELECT COUNT(*) AS count FROM submissions s LEFT JOIN submission_workflows w ON s.id=w.id WHERE COALESCE(w.status,'pending')='pending'").first<any>()).count,
@@ -85,7 +86,7 @@ export async function GET() {
         evidence: evidence.map((r) => ({ ...r, ...JSON.parse(r.data) })),
         admins,
         logs,
-        policies: policies.map((r) => ({ ...r, ...JSON.parse(r.data) })),
+        policies: (can('configuration.manage') ? policies : []).map((r) => ({ ...r, ...JSON.parse(r.data) })),
         user: { email: user.email, role: user.role, permissions: operationPermissions },
       },
       { headers: { 'Cache-Control': 'no-store' } },

@@ -1,4 +1,7 @@
 'use client';
+import ActionFeedback from './action-feedback';
+import { useAdminUnsavedChanges } from './admin-navigation';
+import { AdminFormActions } from './admin-dialog';
 import { useEffect, useState } from 'react';
 import { ordersApi } from '../order-shared';
 import { Field, Choice } from './shared';
@@ -9,13 +12,16 @@ export default function OrderSettings() {
     [error, setError] = useState(''),
     [busy, setBusy] = useState(false),
     [picker, setPicker] = useState(-1);
+  const [dirty,setDirty]=useState(false);
+  const [tone,setTone]=useState<'success'|'error'>('error');
+  useAdminUnsavedChanges(dirty);
   useEffect(() => {
     ordersApi('admin-settings')
       .then(setConfig)
       .catch((e) => setError(e.message));
   }, []);
   if (!config) return <p role="alert" className="error">{error || '正在读取配置…'}</p>;
-  const set = (k: string, v: any) => setConfig({ ...config, [k]: v }),
+  const set = (k: string, v: any) => { setConfig({ ...config, [k]: v }); setDirty(true); },
     method = (i: number, k: string, v: any) =>
       set(
         'methods',
@@ -25,40 +31,33 @@ export default function OrderSettings() {
       );
   return (
     <form
-      className="panel"
-      style={{ padding: 24 }}
+      className="panel admin-settings-panel"
       onSubmit={async (e) => {
         e.preventDefault();
         setBusy(true);
         try {
           await ordersApi('admin-settings', config, true);
-          setError('配置已保存');
+          setTone('success'); setDirty(false); setError('配置已保存');
         } catch (e: any) {
-          setError(e.message);
+          setTone('error'); setError(e.message);
         } finally {
           setBusy(false);
         }
       }}
     >
-      <h2>交易设置</h2>
+      <h1>交易设置</h1>
       <div className="notice" role="status">
         <b>{config.enabled ? '交易已启用' : '交易未启用：前台暂不能下单'}</b>
         <p>启用步骤：① 添加并启用收款项目；② 设置运费和售后期限；③ 勾选交易开关并保存；④ 为已发布商品设置价格与库存。</p>
         <p>关闭交易后，购物车与历史订单入口仍保留；用户不能提交新订单。</p>
       </div>
-      {error && <p role="status">{error}</p>}
-      <section className="panel" style={{padding:16,marginBottom:20}}><h3>小程序支付</h3><label><input type="checkbox" checked={config.miniPayments?.offline===true} onChange={e=>set('miniPayments',{...config.miniPayments,offline:e.target.checked})}/> 启用小程序线下付款</label><p className="muted">使用下方收款项目，与网站交易开关独立；关闭后不影响已提交凭证的后台审核。积分兑换独立运行。</p><label><input type="checkbox" checked={false} disabled/> 微信支付（待支付通知、退款与对账接入完成）</label></section>
+      <ActionFeedback message={error} tone={tone} clear={()=>setError('')}/>
+      <section className="panel" style={{padding:16,marginBottom:20}}><h3>支付方式</h3><p className="muted">以下开关同时适用于 PC、H5 和小程序。积分兑换独立运行。</p><label><input type="checkbox" checked={config.paymentChannels?.offline===true} onChange={e=>set('paymentChannels',{...config.paymentChannels,offline:e.target.checked})}/> 启用线下付款</label><label><input type="checkbox" checked={config.paymentChannels?.wechat===true} onChange={e=>set('paymentChannels',{...config.paymentChannels,wechat:e.target.checked})}/> 启用微信支付</label><p className="notice" role="status">微信支付当前尚未完成商户号、支付回调、退款与对账接入。可先保存为待接入状态；前台不会展示为可付款方式。</p></section>
       <label>
-        <input
-          type="checkbox"
-          checked={config.enabled}
-          onChange={(e) => set('enabled', e.target.checked)}
-        />
+        <input type="checkbox" checked={config.enabled} onChange={(e) => set('enabled', e.target.checked)} />
         启用实物商品交易
       </label>
-      <p className="muted">
-        启用前请设置售后期限及真实收款信息。库存未设置、面议商品不允许下单。
-      </p>
+      <p className="muted">线下付款启用后，PC、H5 和小程序可提交订单并上传付款凭证。库存未设置、面议商品不允许下单。</p>
       <div className="field-grid">
         <Field
           label="未付款关闭时限（小时）"
@@ -80,7 +79,7 @@ export default function OrderSettings() {
       <h3>每单固定运费</h3>
       <div className="field-grid">
         {currencies.map((c) => (
-          <label className="field" key={c}>
+          <label className="field" data-width="short" key={c}>
             {c}
             <input
               required
@@ -209,9 +208,9 @@ export default function OrderSettings() {
         停用项目后，对应待付款订单不能继续提交该方式的凭证；历史付款指引保留。
       </p>
       <p className="muted">操作权限统一在“权限组设置”中管理。</p>
-      <button aria-busy={Boolean(busy)} className="btn primary" style={{ marginTop: 24 }} disabled={busy}>
+      <AdminFormActions busy={busy} showCancel={false}><button aria-busy={Boolean(busy)} className="btn primary" disabled={busy}>
         保存交易配置
-      </button>
+      </button></AdminFormActions>
       {picker >= 0 && (
         <AssetPicker
           accept="image"

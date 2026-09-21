@@ -1,4 +1,8 @@
 .permission-workspace .permission-tabs{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
+.permission-workspace .permission-templates{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:14px 0}
+.permission-workspace .permission-template{display:grid;text-align:left;gap:4px;padding:12px;border:1px solid #e5e5ec;border-radius:12px;background:#fff;color:inherit;cursor:pointer;transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}
+.permission-workspace .permission-template:hover{transform:translateY(-1px);border-color:#7b61e8;box-shadow:0 8px 18px rgba(32,28,55,.10)}
+.permission-workspace .permission-template span,.permission-workspace .permission-template small{font-size:12px;color:#737386;line-height:1.45}
 .permission-workspace .permission-table{overflow-x:auto}
 .permission-workspace table{width:100%;border-collapse:collapse;text-align:left;font-size:13px}
 .permission-workspace th,.permission-workspace td{padding:12px;border-bottom:1px solid #ececf2;vertical-align:top}

@@ -10,7 +10,7 @@ sudo python3 /srv/aition/current/deploy/uat/backup-uat.py
 
 Default destination: `/var/backups/aition`, root-owned mode 0700. Do not put snapshots in a public media directory or under a directory writable by the application user.
 
-The script takes one exclusive maintenance lock, remembers which services were running, and stops web, identity, video, points and order expiry services. It then captures both PostgreSQL databases using local `postgres` peer authentication, the persistent media/identity directories and `/etc/aition`. The files and databases therefore cover the same application write freeze, provided no administrator/import job writes concurrently. Never run schema changes, imports or manual SQL writes during backup.
+The script takes one exclusive maintenance lock, remembers which services were running, and stops web, identity, video, points, order expiry and (when installed) image-derivative services. It then captures both PostgreSQL databases using local `postgres` peer authentication, the persistent media/identity directories and `/etc/aition`. The files and databases therefore cover the same application write freeze, provided no administrator/import job writes concurrently. Never run schema changes, imports or manual SQL writes during backup.
 
 Completed snapshots are atomically renamed from `.incomplete-*` to a timestamped directory after dump/tar success and SHA256 manifest generation. Previously active services resume in a `finally` handler, including normal errors, SIGINT and SIGTERM. SIGKILL, host power loss and filesystem failure cannot run cleanup handlers: inspect and restart services manually after those events. Incomplete snapshots remain visible for diagnosis and must not be used as completed backups.
 
@@ -48,7 +48,7 @@ sudo python3 /srv/aition/current/deploy/uat/rollback-uat.py PREVIOUS_RELEASE --e
 
 The first invocation is a dry run. Execution accepts only a complete existing release under `/srv/aition/releases`, stops writers, atomically switches `/srv/aition/current`, and restarts previously active services. If switching/restarting fails, it attempts to restore the previous link and service state.
 
-**This never rolls back PostgreSQL data, media or identity files.** Verify schema compatibility and shared Python virtualenv compatibility before switching. A database-incompatible release requires a separately planned recovery, not this script. `systemctl is-active` is only a process check; authenticated workflows, background processing and user-visible behavior must be checked afterward.
+**This never rolls back PostgreSQL data, media or identity files.** Verify schema compatibility and shared Python virtualenv compatibility before switching. A database-incompatible release requires a separately planned recovery, not this script. If the selected earlier release lacks the image derivative worker, rollback keeps that optional service stopped instead of attempting to start a missing script. `systemctl is-active` is only a process check; authenticated workflows, background processing and user-visible behavior must be checked afterward.
 
 ## Verification status
 

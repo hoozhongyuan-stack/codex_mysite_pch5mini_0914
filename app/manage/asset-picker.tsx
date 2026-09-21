@@ -5,12 +5,12 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog';
+} from './admin-dialog';
 import MediaBrowser from './media-browser';
 export default function AssetPicker(props: any) {
   return (
-    <Dialog open onOpenChange={(o) => !o && props.onClose()}>
-      <DialogContent className="asset-picker-dialog unified-picker">
+    <Dialog guardChanges={false} open onOpenChange={(o) => !o && props.onClose()}>
+      <DialogContent size="media" className="asset-picker-dialog unified-picker">
         <DialogHeader>
           <DialogTitle>选择素材</DialogTitle>
           <DialogDescription>

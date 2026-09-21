@@ -11,6 +11,7 @@ const labels: any = {
   cart_add: '加入购物车',
   checkout_start: '进入结算',
   order_submit: '提交订单',
+  share: '发起分享',
 };
 export default function BehaviorDashboard() {
   const [draft, setDraft] = useState({
@@ -53,6 +54,7 @@ export default function BehaviorDashboard() {
     ['访问会话', 'sessions'],
     ['有效阅读', 'articleReads'],
     ['收藏操作', 'favorites'],
+    ['发起分享', 'shares'], ['分享回流访问', 'shareReturns'],
     ['加购操作', 'cartAdds'],
   ];
   const funnel = (title: string, steps: any[]) => (
@@ -91,7 +93,7 @@ export default function BehaviorDashboard() {
         </small>
       </header>
       <form
-        className="dash-filters"
+        className="admin-filter-bar dash-filters"
         onSubmit={(e) => {
           e.preventDefault();
           setQuery({ ...draft });
@@ -223,7 +225,7 @@ export default function BehaviorDashboard() {
               <section className="dash-panel" key={title}>
                 <h2>{title}</h2>
                 {rows.length ? (
-                  <table>
+                  <table className="list-table">
                     <thead>
                       <tr>
                         <th>内容</th>

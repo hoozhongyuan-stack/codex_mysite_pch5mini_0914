@@ -1,5 +1,5 @@
 import {ActionView} from './interaction';
-import {pageBehavior,privacyChoice} from '../lib/behavior';
+import {pageBehavior} from '../lib/behavior';
 import { useEffect, useState } from 'react';
 import Taro, { useDidShow } from '@tarojs/taro';
 import { View, Image, Text } from '@tarojs/components';
@@ -16,10 +16,10 @@ export default function GlobalNavigation({active='', config:provided, onChange, 
   const items=config?.mini?navigation(config.mini.navigation):[];
   if(hidden||!config)return null;
   function change(target:string){if(onChange){onChange(target);return;}void Taro.reLaunch({url:destinationUrl({target})})}
-  return <><ActionView style={{textAlign:'right',fontSize:'22rpx',padding:'8rpx 24rpx',color:'#6b786e'}} onClick={()=>void privacyChoice()}>隐私设置 · 匿名统计</ActionView>{!provided&&floating&&<Floating entries={config.floating||[]} path={'/'+(Taro.getCurrentInstance().router?.path?.replace(/^\//,'').split('/')[1]||active)} raised={/pages\/(checkout|cart)\//.test(Taro.getCurrentInstance().router?.path||'')}/>}{!keyboard&&items.length>0&&<View className="bottom-nav">{items.map((entry:any)=>{
+  return <>{!provided&&floating&&<Floating entries={config.floating||[]} path={'/'+(Taro.getCurrentInstance().router?.path?.replace(/^\//,'').split('/')[1]||active)} raised={/pages\/(checkout|cart)\//.test(Taro.getCurrentInstance().router?.path||'')}/>}{!keyboard&&items.length>0&&<View className="bottom-nav">{items.map((entry:any)=>{
     const icon=active===entry.target?(entry.selectedIconId||entry.iconId):entry.iconId;
     return <ActionView key={entry.target} className={active===entry.target?'active':''} onClick={()=>change(entry.target)} role="button" ariaLabel={entry.label}>
-      {icon?<Image src={image(icon)+'?v='+encodeURIComponent(config.revision||'')} mode="aspectFit"/>:<View className="nav-dot"/>}<Text>{entry.label}</Text>
+      {icon?<Image src={image(icon,'thumb')+'&v='+encodeURIComponent(config.revision||'')} mode="aspectFit" lazyLoad/>:<View className="nav-dot"/>}<Text>{entry.label}</Text>
     </ActionView>;
   })}</View>}</>;
 }

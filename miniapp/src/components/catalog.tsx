@@ -7,7 +7,7 @@ import { image, request, token } from '../lib/api';
 export function Cards({rows,points=false,disabled=false}: {rows:any[];points?:boolean;disabled?:boolean}){
  const article=rows[0]?.kind==='articles';
  return <View className={article?'article-list':'cards'}>{rows.map(r=><ActionView disabled={disabled} className={article?'article-card':'card'} key={r.id}  onClick={()=>!disabled&&Taro.navigateTo({url:'/pages/detail/index?id='+encodeURIComponent(r.id)+'&kind='+r.kind+'&mode='+(points?'points':'cash')})}>
- {r.imageId?<Image className='cover' src={image(r.imageId)} mode='aspectFill'/>:<View className='cover no-image'>暂无图片</View>}
+ {r.imageId?<Image className='cover' src={image(r.imageId,'card')} mode='aspectFill' lazyLoad/>:<View className='cover no-image'>暂无图片</View>}
  <View className='card-copy'><Text className='card-title'>{r.title}</Text>{article?<><Text className='article-summary'>{r.summary}</Text><Text className='article-more'>阅读全文 ›</Text></>:<Text className='price'>{points?(r.points?`${r.points} 积分`:'暂不可兑换'):(r.price!==null?`${r.currency==='CNY'?'¥':r.currency+' '}${(r.price/100).toFixed(2)}`:'价格待定')}</Text>}</View>
  </ActionView>)}</View>
 }

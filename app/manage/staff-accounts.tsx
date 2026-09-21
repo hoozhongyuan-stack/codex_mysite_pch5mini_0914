@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, AdminFormActions } from './admin-dialog';
 export default function StaffAccounts({onLogs}:{onLogs?:(email:string)=>void}) {
   const [rows, setRows] = useState<any[]>([]),
     [edit, setEdit] = useState<any>(null),
@@ -25,6 +26,8 @@ export default function StaffAccounts({onLogs}:{onLogs?:(email:string)=>void}) {
   useEffect(() => {
     load();
   }, []);
+  const openEdit = (value: any) => { setMessage(''); setEdit(value); };
+  const openAssignment = (value: any) => { setMessage(''); setAssignment(value); };
   return (
     <section>
       <div className="heading-row">
@@ -32,7 +35,7 @@ export default function StaffAccounts({onLogs}:{onLogs?:(email:string)=>void}) {
         <button
           className="btn primary"
           onClick={() =>
-            setEdit({
+            openEdit({
               username: '',
               email: '',
               role: 'editor',
@@ -75,13 +78,13 @@ export default function StaffAccounts({onLogs}:{onLogs?:(email:string)=>void}) {
                   <button
                     className="btn"
                     disabled={r.bootstrap}
-                    onClick={() => setEdit({ ...r, password: '' })}
+                    onClick={() => openEdit({ ...r, password: '' })}
                   >
                     {r.bootstrap
                       ? '初始管理员（个人设置修改）'
                       : '编辑 / 重置密码'}
                   </button>
-                  {r.role!=='owner'&&<button className="btn" onClick={()=>setAssignment({...r})}>分配权限组</button>}
+                  {r.role!=='owner'&&<button className="btn" onClick={()=>openAssignment({...r})}>分配权限组</button>}
                   <button className="btn" onClick={()=>onLogs?.(r.email)}>操作日志</button>
                 </td>
               </tr>
@@ -89,10 +92,9 @@ export default function StaffAccounts({onLogs}:{onLogs?:(email:string)=>void}) {
           </tbody>
         </table>
       </div>
-      {assignment&&<form className="panel" onSubmit={async e=>{e.preventDefault();setBusy(true);try{await api('permissions-assign',{accountId:assignment.id,revision:assignment.revision,groupIds:assignment.groupIds});setAssignment(null);setMessage('权限组分配已保存');await load();}catch(error:any){setMessage(error.message);}finally{setBusy(false);}}}><h3>分配权限组 · {assignment.username}</h3><div className="account-groups">{permissions.groups.map((g:any)=><label key={g.id}><input type="checkbox" checked={assignment.groupIds.includes(g.id)} onChange={e=>setAssignment({...assignment,groupIds:e.target.checked?[...assignment.groupIds,g.id]:assignment.groupIds.filter((id:string)=>id!==g.id)})}/>{g.name}{g.active?'':'（停用）'}</label>)}</div>{!permissions.groups.length&&<p>暂无权限组，请在权限组页签创建。</p>}<p className="muted">保持角色基线和历史授权。停用账号不因分配权限组恢复访问。</p><button aria-busy={Boolean(busy)} className="btn primary" disabled={busy}>保存分配</button><button aria-busy={Boolean(busy)} type="button" className="btn" disabled={busy} onClick={()=>setAssignment(null)}>取消</button></form>}
+      {assignment&&<Dialog open onOpenChange={open => {if (!open && !busy) setAssignment(null);}}><DialogContent size="sm"><DialogHeader><DialogTitle>分配权限组 · {assignment.username}</DialogTitle></DialogHeader><form onSubmit={async e=>{e.preventDefault();setBusy(true);try{await api('permissions-assign',{accountId:assignment.id,revision:assignment.revision,groupIds:assignment.groupIds});setAssignment(null);setMessage('权限组分配已保存');await load();}catch(error:any){setMessage(error.message);}finally{setBusy(false);}}}><div className="account-groups">{permissions.groups.map((g:any)=><label key={g.id}><input type="checkbox" checked={assignment.groupIds.includes(g.id)} onChange={e=>setAssignment({...assignment,groupIds:e.target.checked?[...assignment.groupIds,g.id]:assignment.groupIds.filter((id:string)=>id!==g.id)})}/>{g.name}{g.active?'':'（停用）'}</label>)}</div>{!permissions.groups.length&&<p>暂无权限组，请在权限组页签创建。</p>}<p className="muted">保持角色基线和历史授权。停用账号不因分配权限组恢复访问。</p><p role="alert">{message}</p><AdminFormActions busy={busy}><button aria-busy={Boolean(busy)} className="btn primary" disabled={busy}>保存分配</button></AdminFormActions></form></DialogContent></Dialog>}
       {edit && (
-        <form
-          className="panel"
+        <Dialog open onOpenChange={open => {if (!open && !busy) setEdit(null);}}><DialogContent size="sm"><DialogHeader><DialogTitle>{edit.id ? '编辑子账号' : '新增子账号'}</DialogTitle></DialogHeader><form
           onSubmit={async (e) => {
             e.preventDefault();
             setBusy(true);
@@ -108,7 +110,7 @@ export default function StaffAccounts({onLogs}:{onLogs?:(email:string)=>void}) {
             }
           }}
         >
-          <h2>管理员配置</h2>
+          {message && <p role="alert" className="error">{message}</p>}
           {[
             ['username', '用户名'],
             ['email', '邮箱'],
@@ -131,13 +133,13 @@ export default function StaffAccounts({onLogs}:{onLogs?:(email:string)=>void}) {
               />
             </label>
           ))}
-          <select
+          <label className="field"><span>账号角色</span><select
             value={edit.role}
             onChange={(e) => setEdit({ ...edit, role: e.target.value })}
           >
             <option value="editor">编辑员</option>
             <option value="owner">超级管理员</option>
-          </select>
+          </select></label>
           <label>
             <input
               type="checkbox"
@@ -146,11 +148,8 @@ export default function StaffAccounts({onLogs}:{onLogs?:(email:string)=>void}) {
             />
             启用
           </label>
-          <button aria-busy={Boolean(busy)} className="btn primary" disabled={busy}>保存</button>
-          <button type="button" className="btn" onClick={() => setEdit(null)}>
-            取消
-          </button>
-        </form>
+          <AdminFormActions busy={busy}><button aria-busy={Boolean(busy)} className="btn primary" disabled={busy}>保存</button></AdminFormActions>
+        </form></DialogContent></Dialog>
       )}
     </section>
   );

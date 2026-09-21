@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { AdminPagination } from './admin-ui';
 export type Filter = {
   key: string;
   label: string;
@@ -34,7 +35,8 @@ export function useList(endpoint: string) {
       else p.delete(k);
     }
     const next = p.toString();
-    window.history.pushState(null, '', window.location.pathname + '?' + next);
+    window.history.pushState(window.history.state, '', window.location.pathname + '?' + next);
+    window.dispatchEvent(new Event('admin:navigate'));
     setQuery(next);
   };
   useEffect(() => {
@@ -75,20 +77,7 @@ export function Filters({
   fields: Filter[];
 }) {
   const p = new URLSearchParams(list.query);
-  return (
-    <form
-      className="list-filters"
-      key={list.query}
-      onSubmit={(e) => {
-        e.preventDefault();
-        const d = new FormData(e.currentTarget);
-        list.update({
-          ...(Object.fromEntries(d) as Record<string, string>),
-          page: '1',
-        });
-      }}
-    >
-      {fields.map((f) => (
+  const renderFields = (items: Filter[]) => (<>      {items.map((f) => (
         <label key={f.key}>
           <span>{f.label}</span>
           {f.options ? (
@@ -109,6 +98,24 @@ export function Filters({
           )}
         </label>
       ))}
+</>);
+  return (
+    <form
+      className="list-filters"
+      key={list.query}
+      onSubmit={(e) => {
+        e.preventDefault();
+        const d = new FormData(e.currentTarget);
+        list.update({
+          ...(Object.fromEntries(d) as Record<string, string>),
+          page: '1',
+        });
+      }}
+    >
+      {renderFields(fields.slice(0, 3))}
+      <details className="admin-filter-more" open={fields.slice(3).some(f => p.get(f.key)) || !!p.get('from') || !!p.get('to') || undefined}>
+        <summary>更多筛选{fields.slice(3).some(f => p.get(f.key)) || p.get('from') || p.get('to') ? ' · 已设置' : ''}</summary>
+        <div>{renderFields(fields.slice(3))}
       <label>
         <span>开始日期（UTC）</span>
         <input type="date" name="from" defaultValue={p.get('from') || ''} />
@@ -124,6 +131,9 @@ export function Filters({
           <option value="asc">最早在前</option>
         </select>
       </label>
+        </div>
+      </details>
+      <div className="admin-filter-actions">
       <button aria-busy={Boolean(list.loading)} className="btn primary" disabled={list.loading}>
         查询
       </button>
@@ -144,16 +154,14 @@ export function Filters({
       >
         重置
       </button>
+      </div>
     </form>
   );
 }
 export function Pager({ list }: { list: ReturnType<typeof useList> }) {
   const r = list.result;
   return (
-    <div className="list-pager">
-      <span>
-        共 {r.total} 条 · 第 {r.page} / {r.pages} 页
-      </span>
+    <AdminPagination total={r.total} page={r.page} pages={r.pages} busy={list.loading} onPage={(page)=>list.update({page:String(page)})}>
       <select
         aria-label="每页条数"
         value={new URLSearchParams(list.query).get('size') || 20}
@@ -165,20 +173,6 @@ export function Pager({ list }: { list: ReturnType<typeof useList> }) {
           </option>
         ))}
       </select>
-      <button aria-busy={Boolean(list.loading)}
-        className="btn"
-        disabled={list.loading || r.page <= 1}
-        onClick={() => list.update({ page: String(r.page - 1) })}
-      >
-        上一页
-      </button>
-      <button aria-busy={Boolean(list.loading)}
-        className="btn"
-        disabled={list.loading || r.page >= r.pages}
-        onClick={() => list.update({ page: String(r.page + 1) })}
-      >
-        下一页
-      </button>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -201,7 +195,7 @@ export function Pager({ list }: { list: ReturnType<typeof useList> }) {
           跳转
         </button>
       </form>
-    </div>
+    </AdminPagination>
   );
 }
 export function ListState({ list }: { list: ReturnType<typeof useList> }) {

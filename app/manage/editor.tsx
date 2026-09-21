@@ -2,11 +2,13 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   Dialog,
+  AdminFormActions,
+  useDialogChangeRevision,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog';
+} from './admin-dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Field, Choice, mutate } from './shared';
 import RichEditor from './rich-editor';
@@ -24,6 +26,7 @@ export default function Editor({
   onClose,
   onSaved,
 }: any) {
+  const [editRevision, markEdited] = useDialogChangeRevision();
   const [data, setData] = useState(
     record.kind === 'forms'
       ? { ...record, fields: record.fields || legacyFields }
@@ -31,8 +34,10 @@ export default function Editor({
   );
   const images: string[] =
     data.imageIds ?? (data.imageId ? [data.imageId] : []);
-  const setImages = (ids: string[]) =>
+  const setImages = (ids: string[]) => {
+    markEdited();
     setData((d: any) => ({ ...d, imageIds: ids, imageId: ids[0] || '' }));
+  };
   const [picker, setPicker] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -43,8 +48,10 @@ export default function Editor({
       errorRef.current?.focus();
     }
   }, [error]);
-  const set = (key: string, value: any) =>
+  const set = (key: string, value: any) => {
+    markEdited();
     setData((d: any) => ({ ...d, [key]: value }));
+  };
   async function save(status = data.status) {
     const payload = { ...data, status };
     setError('');
@@ -73,12 +80,13 @@ export default function Editor({
   }
   return (
     <Dialog
+      changeRevision={editRevision}
       open
       onOpenChange={(open) => {
         if (!open && !busy) onClose();
       }}
     >
-      <DialogContent className="editor-dialog">
+      <DialogContent size="editor" className="editor-dialog">
         <DialogHeader>
           <DialogTitle>
             {data.id ? '编辑' : '创建'}
@@ -321,24 +329,15 @@ export default function Editor({
                   onChange={(v: any) => set('trade', v)}
                 />
               )}</div>
-          <div
-            className="flex-actions editor-save-actions"
-          >
-            <button aria-busy={Boolean(busy)}
-              className="btn"
-              type="button"
-              disabled={busy}
-              onClick={onClose}
-            >
-              取消
-            </button>
+          <AdminFormActions busy={busy}>
+
             <button aria-busy={Boolean(busy)} className="btn" type="button" disabled={busy} onClick={() => void save('draft')}>
               保存草稿
             </button>
             <button aria-busy={Boolean(busy)} className="btn primary" disabled={busy}>
               {busy ? '保存中…' : data.status === 'published' ? '保存并发布' : '保存内容'}
             </button>
-          </div>
+          </AdminFormActions>
         </form>
         {picker && (
           <AssetPicker

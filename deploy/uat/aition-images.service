@@ -1,0 +1,27 @@
+[Unit]
+Description=Aition UAT image derivative worker
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=aition
+Group=aition
+WorkingDirectory=/srv/aition/current
+EnvironmentFile=/etc/aition/web.env
+Environment=IMAGE_NODE_MODULES=/srv/aition/current/web/package.json
+Environment=IMAGE_WORKER_DELAY_MS=1000
+ExecStart=/usr/local/bin/node scripts/image-derivatives-worker.mjs --loop
+Restart=on-failure
+RestartSec=5
+Nice=10
+CPUQuota=50%
+MemoryMax=512M
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/aition/shared
+
+[Install]
+WantedBy=multi-user.target

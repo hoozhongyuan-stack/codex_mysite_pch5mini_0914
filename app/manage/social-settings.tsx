@@ -1,4 +1,5 @@
 'use client';
+import { AdminFormActions } from './admin-dialog';
 import { useEffect, useState } from 'react';
 export default function SocialSettings({onSaved}:any) {
  const [data,setData]=useState<any>(null),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
@@ -14,7 +15,7 @@ export default function SocialSettings({onSaved}:any) {
  <label className="field"><span>显示顺序（0–99）</span><input name="sort" type="number" min={0} max={99} defaultValue={p.sort}/></label>
  <label className="field"><span>授权回调地址（由服务器 PUBLIC_ORIGIN 生成）</span><input readOnly value={p.callbackUrl}/></label><button type="button" className="btn" onClick={()=>navigator.clipboard.writeText(p.callbackUrl).then(()=>setMessage('回调地址已复制')).catch(()=>setMessage('请手动复制回调地址'))}>复制回调地址</button>
  <p className="muted">{p.provider==='wechat'?'需微信开放平台网站应用 AppID、AppSecret 和网站扫码登录资格；微信内公众号授权属于单独接入。':p.provider==='google'?'Google Cloud 创建 Web 类型 OAuth 客户端；设置同意页面、授权来源和完全一致的回调地址。':'Meta 应用配置 Facebook Login、App ID、App Secret 和有效 OAuth 回调 URI；按平台要求完成上线审核。'}</p>
- <button aria-busy={Boolean(busy)} className="btn primary" disabled={busy}>保存真实登录配置</button></form>
+ <AdminFormActions busy={busy} showCancel={false}><button aria-busy={Boolean(busy)} className="btn primary" disabled={busy}>保存真实登录配置</button></AdminFormActions></form>
 
  </div>)}{message&&<p role="status" className="notice">{message}</p>}</section>
 }

@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 from django.test import TestCase
 from django.contrib.auth.models import User
+from django.utils import timezone
 from .models import VisitorState, PointEntry
 from .admin_users import list_users
 from .points import admin_action, adjust
@@ -25,6 +26,14 @@ class FormalListingsTests(TestCase):
         user = User.objects.create_user('google-user', email='google@example.test')
         VisitorState.objects.create(user=user, registration_source='google')
         self.assertEqual(list_users({'source': 'google'})['total'], 1)
+
+    def test_phone_authorization_is_masked_and_filterable(self):
+        user = User.objects.create_user('phone-list', email='phone-list@example.test')
+        VisitorState.objects.create(user=user, phone_last4='8000', phone_verified_at=timezone.now())
+        row = list_users({'q': '8000'})['rows'][0]
+        self.assertEqual(row['phoneMasked'], '***8000')
+        self.assertTrue(row['phoneVerified'])
+        self.assertEqual(list_users({'phoneVerified': 'true'})['total'], 1)
 
     def test_event_list_hides_test_events_without_deleting_history(self):
         from .models import SalonEvent

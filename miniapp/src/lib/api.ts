@@ -2,7 +2,7 @@ import {responseData} from './response.mjs';
 import Taro from '@tarojs/taro';
 import { navigation, assetUrl } from './domain.mjs';
 export const origin = MINI_API_ORIGIN;
-export const image = (id?: string) => assetUrl(origin, id);
+export const image = (id?: string, variant='') => assetUrl(origin, id) + (variant ? '?variant='+encodeURIComponent(variant) : '');
 const sessionKey = 'mini-session-v1:' + origin;
 export const saveSession = (value: string) =>
   Taro.setStorageSync(sessionKey, value);

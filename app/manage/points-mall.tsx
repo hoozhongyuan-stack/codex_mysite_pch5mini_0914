@@ -1,4 +1,7 @@
 'use client';
+import { AdminTabs } from './admin-ui';
+import { navigateAdmin } from './admin-navigation';
+import { useAdminTab } from './admin-navigation';
 import SiteLink from '../../components/site-link';
 
 import { useEffect, useRef, useState } from 'react';
@@ -12,16 +15,19 @@ import './operations-layout.css';
 import { validateTrade } from '@/lib/product-options.mjs';
 import {
   Dialog,
+  AdminFormActions,
+  useDialogChangeRevision,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from './admin-dialog';
 export default function AdminPointsMall({
   categories = [],
   role = 'editor',
   permissions = [],
 }: any) {
-  const [tab, setTab] = useState('products'),
+  const [tab, setTab] = useAdminTab('mallTab', 'products', ['products','orders']);
+  const
     [selected, setSelected] = useState<string[]>([]),
     [loading, setLoading] = useState(false),
     [batchSort, setBatchSort] = useState('0'),
@@ -96,8 +102,11 @@ export default function AdminPointsMall({
       live = false;
     };
   }, [picker, pickQ, pickPage, pickCategory]);
-  const setTrade = (key: string, value: any) =>
+  const [editRevision, markEdited] = useDialogChangeRevision();
+  const setTrade = (key: string, value: any) => {
+    markEdited();
     setEdit((x: any) => ({ ...x, trade: { ...x.trade, [key]: value } }));
+  };
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
@@ -207,20 +216,7 @@ export default function AdminPointsMall({
           </SiteLink>
         </div>
       </div>
-      <nav className="points-tabs">
-        <button
-          aria-pressed={tab === 'products'}
-          onClick={() => setTab('products')}
-        >
-          兑换商品
-        </button>
-        <button
-          aria-pressed={tab === 'orders'}
-          onClick={() => setTab('orders')}
-        >
-          兑换订单
-        </button>
-      </nav>
+      <AdminTabs label="积分商城栏目" value={tab} items={[['products','兑换商品'],['orders','兑换订单']]} onChange={value=>{setTab(value); if(value==='products')navigateAdmin({order:''},true);}}/>
       {message && (
         <p role="status" className="notice">
           {message}
@@ -290,7 +286,7 @@ export default function AdminPointsMall({
                 min={0}
                 max={999999999}
                 value={batchSort}
-                style={{ width: 90 }}
+                className="admin-short-input"
                 onChange={(e) => setBatchSort(e.target.value)}
               />
               <button aria-busy={Boolean(busy)}
@@ -458,8 +454,8 @@ export default function AdminPointsMall({
         </>
       )}
       {picker && (
-        <Dialog open onOpenChange={setPicker}>
-          <DialogContent className="mall-product-picker">
+        <Dialog guardChanges={false} open onOpenChange={setPicker}>
+          <DialogContent size="media" className="mall-product-picker">
             <DialogHeader>
               <DialogTitle>新增兑换商品 · 选择普通商品</DialogTitle>
             </DialogHeader>
@@ -565,12 +561,13 @@ export default function AdminPointsMall({
       )}
       {edit && (
         <Dialog
+          changeRevision={editRevision}
           open
           onOpenChange={(v) => {
             if (!v && !busy) setEdit(null);
           }}
         >
-          <DialogContent>
+          <DialogContent size="md">
             <DialogHeader>
               <DialogTitle>兑换信息 · {edit.titleZh}</DialogTitle>
             </DialogHeader>
@@ -667,7 +664,7 @@ export default function AdminPointsMall({
                 积分留空的规格不可兑换。商品正文、售价及库存保持原值。
               </p>
               {message && <p role="alert">{message}</p>}
-              <div className="flex-actions">
+              <AdminFormActions busy={busy}>
                 <button aria-busy={Boolean(busy)} className="btn" value="draft" disabled={busy}>
                   保存草稿
                 </button>
@@ -704,7 +701,7 @@ export default function AdminPointsMall({
                 >
                   移除兑换资格
                 </button>
-              </div>
+              </AdminFormActions>
             </form>
           </DialogContent>
         </Dialog>
