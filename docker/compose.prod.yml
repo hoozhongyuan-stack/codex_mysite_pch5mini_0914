@@ -1,0 +1,199 @@
+name: mysite-codex
+
+services:
+  db:
+    image: postgres:18
+    container_name: mysite-codex-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_SUPER_PASSWORD:?set in .env.production}
+      POSTGRES_APP_PASSWORD: ${POSTGRES_APP_PASSWORD:?set in .env.production}
+      POSTGRES_IDENTITY_PASSWORD: ${POSTGRES_IDENTITY_PASSWORD:?set in .env.production}
+      POSTGRES_CMS_RUNTIME_PASSWORD: ${POSTGRES_CMS_RUNTIME_PASSWORD:?set in .env.production}
+    volumes:
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
+      - ../data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks:
+      - internal
+
+  cms-migrate:
+    build:
+      context: ..
+      dockerfile: docker/web.Dockerfile
+    image: mysite-codex-web:latest
+    container_name: mysite-codex-cms-migrate
+    restart: "no"
+    environment:
+      CMS_MIGRATION_URL: postgresql://aition_migration:${POSTGRES_APP_PASSWORD:?set in .env.production}@db:5432/mysite_cms
+    command: ["node", "deploy/uat/install-cms.mjs"]
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+
+  identity-migrate:
+    build:
+      context: ..
+      dockerfile: docker/identity.Dockerfile
+    image: mysite-codex-identity:latest
+    container_name: mysite-codex-identity-migrate
+    restart: "no"
+    environment:
+      IDENTITY_ENV: production
+      IDENTITY_DATA_DIR: /data/identity
+      IDENTITY_DATABASE_URL: postgresql://aition_identity:${POSTGRES_IDENTITY_PASSWORD:?set in .env.production}@db:5432/mysite_identity
+      IDENTITY_SECRET_KEY: ${IDENTITY_SECRET_KEY:?set in .env.production}
+      IDENTITY_INTERNAL_KEY: ${IDENTITY_INTERNAL_KEY:?set in .env.production}
+      PUBLIC_ORIGIN: https://aition.art
+      IDENTITY_ALLOWED_HOSTS: identity,mysite-codex-identity,localhost,127.0.0.1
+      INITIAL_ADMIN_USERNAME: ${INITIAL_ADMIN_USERNAME:-admin}
+      INITIAL_ADMIN_EMAIL: ${INITIAL_ADMIN_EMAIL:-admin@aition.art}
+      INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-}
+    volumes:
+      - ../data/identity:/data/identity
+      - ../data/files:/data/files
+    command: ["sh", "-c", "python manage.py migrate --noinput && if [ -n \"$$INITIAL_ADMIN_PASSWORD\" ]; then python manage.py init_staff; fi"]
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+
+  identity:
+    build:
+      context: ..
+      dockerfile: docker/identity.Dockerfile
+    image: mysite-codex-identity:latest
+    container_name: mysite-codex-identity
+    restart: unless-stopped
+    environment:
+      IDENTITY_ENV: production
+      IDENTITY_DATA_DIR: /data/identity
+      IDENTITY_DATABASE_URL: postgresql://aition_identity:${POSTGRES_IDENTITY_PASSWORD:?set in .env.production}@db:5432/mysite_identity
+      IDENTITY_SECRET_KEY: ${IDENTITY_SECRET_KEY:?set in .env.production}
+      IDENTITY_INTERNAL_KEY: ${IDENTITY_INTERNAL_KEY:?set in .env.production}
+      PUBLIC_ORIGIN: https://aition.art
+      IDENTITY_ALLOWED_HOSTS: identity,mysite-codex-identity,localhost,127.0.0.1
+    volumes:
+      - ../data/identity:/data/identity
+      - ../data/files:/data/files
+    depends_on:
+      identity-migrate:
+        condition: service_completed_successfully
+    networks:
+      - internal
+
+  web:
+    build:
+      context: ..
+      dockerfile: docker/web.Dockerfile
+    image: mysite-codex-web:latest
+    container_name: mysite-codex-web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      CMS_DATABASE_URL: postgresql://aition_cms:${POSTGRES_CMS_RUNTIME_PASSWORD:?set in .env.production}@db:5432/mysite_cms
+      FILES_DIR: /data/files
+      IDENTITY_URL: http://identity:3002
+      IDENTITY_KEY: ${IDENTITY_INTERNAL_KEY:?set in .env.production}
+      PUBLIC_ORIGIN: https://aition.art
+      VINEXT_TRUSTED_HOSTS: aition.art,www.aition.art
+    volumes:
+      - ../data/files:/data/files
+      - ../data/backups:/data/backups
+    depends_on:
+      cms-migrate:
+        condition: service_completed_successfully
+      identity:
+        condition: service_started
+    networks:
+      - internal
+      - edge
+
+  order-expiry:
+    image: mysite-codex-web:latest
+    container_name: mysite-codex-order-expiry
+    restart: unless-stopped
+    environment:
+      ORDER_ORIGIN: http://web:3001
+      IDENTITY_KEY: ${IDENTITY_INTERNAL_KEY:?set in .env.production}
+    command: ["node", "scripts/order-expiry-worker.mjs"]
+    depends_on:
+      web:
+        condition: service_started
+    networks:
+      - internal
+
+  image-derivatives:
+    image: mysite-codex-web:latest
+    container_name: mysite-codex-image-derivatives
+    restart: unless-stopped
+    environment:
+      CMS_DATABASE_URL: postgresql://aition_cms:${POSTGRES_CMS_RUNTIME_PASSWORD:?set in .env.production}@db:5432/mysite_cms
+      FILES_DIR: /data/files
+    volumes:
+      - ../data/files:/data/files
+    command: ["node", "scripts/image-derivatives-worker.mjs", "--loop"]
+    depends_on:
+      cms-migrate:
+        condition: service_completed_successfully
+    networks:
+      - internal
+
+  video-worker:
+    image: mysite-codex-identity:latest
+    container_name: mysite-codex-video-worker
+    restart: unless-stopped
+    environment:
+      IDENTITY_ENV: production
+      IDENTITY_DATA_DIR: /data/identity
+      IDENTITY_DATABASE_URL: postgresql://aition_identity:${POSTGRES_IDENTITY_PASSWORD:?set in .env.production}@db:5432/mysite_identity
+      IDENTITY_SECRET_KEY: ${IDENTITY_SECRET_KEY:?set in .env.production}
+      IDENTITY_INTERNAL_KEY: ${IDENTITY_INTERNAL_KEY:?set in .env.production}
+      PUBLIC_ORIGIN: https://aition.art
+      IDENTITY_ALLOWED_HOSTS: identity,mysite-codex-identity,localhost,127.0.0.1
+    volumes:
+      - ../data/identity:/data/identity
+      - ../data/files:/data/files
+    command: ["python", "manage.py", "video_worker"]
+    depends_on:
+      identity:
+        condition: service_started
+    networks:
+      - internal
+
+  points-worker:
+    image: mysite-codex-identity:latest
+    container_name: mysite-codex-points-worker
+    restart: unless-stopped
+    environment:
+      IDENTITY_ENV: production
+      IDENTITY_DATA_DIR: /data/identity
+      IDENTITY_DATABASE_URL: postgresql://aition_identity:${POSTGRES_IDENTITY_PASSWORD:?set in .env.production}@db:5432/mysite_identity
+      IDENTITY_SECRET_KEY: ${IDENTITY_SECRET_KEY:?set in .env.production}
+      IDENTITY_INTERNAL_KEY: ${IDENTITY_INTERNAL_KEY:?set in .env.production}
+      PUBLIC_ORIGIN: https://aition.art
+      IDENTITY_ALLOWED_HOSTS: identity,mysite-codex-identity,localhost,127.0.0.1
+    volumes:
+      - ../data/identity:/data/identity
+      - ../data/files:/data/files
+    command: ["python", "manage.py", "points_worker", "--loop"]
+    depends_on:
+      identity:
+        condition: service_started
+    networks:
+      - internal
+
+networks:
+  internal:
+    name: mysite-codex-internal
+  edge:
+    name: aition-shared-edge
+    external: true

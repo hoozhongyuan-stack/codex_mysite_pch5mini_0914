@@ -1,0 +1,4 @@
+aition.art, www.aition.art {
+    encode gzip zstd
+    reverse_proxy mysite-codex-web:3001
+}
