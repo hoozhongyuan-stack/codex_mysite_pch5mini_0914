@@ -38,7 +38,9 @@ chmod 600 docker/.env.production
 ```
 
 Fill `docker/.env.production` with fresh random values. Do not commit or print
-those values.
+those values. The `POSTGRES_*_PASSWORD` values are interpolated into
+PostgreSQL URLs, so generate them with URL-safe characters such as
+`A-Za-z0-9` unless you percent-encode them first.
 
 Build and start:
 
