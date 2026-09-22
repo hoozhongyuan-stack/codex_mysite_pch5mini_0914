@@ -54,6 +54,7 @@ __pycache__/
 
 # Private local deployment notes
 /localmd.md
+/local.md
 
 # Machine-local mini-program cache and settings
 /miniapp/.swc/
