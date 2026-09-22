@@ -1,8 +1,9 @@
 FROM node:24-bookworm-slim AS base
 ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH
+RUN sed -i 's|http://deb.debian.org/debian|http://mirrors.aliyun.com/debian|g; s|http://deb.debian.org/debian-security|http://mirrors.aliyun.com/debian-security|g' /etc/apt/sources.list.d/debian.sources
 RUN corepack enable && apt-get update \
-  && apt-get install -y --no-install-recommends ca-certificates openssl \
+  && apt-get install -y -o Acquire::http::Timeout=30 -o Acquire::Retries=3 --no-install-recommends ca-certificates openssl \
   && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
@@ -13,6 +14,7 @@ RUN pnpm install --frozen-lockfile
 FROM deps AS build
 COPY . .
 ENV DEPLOY_TARGET=node
+RUN pnpm config set registry https://registry.npmmirror.com
 RUN pnpm run build:uat
 
 FROM base AS runner

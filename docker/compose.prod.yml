@@ -118,6 +118,9 @@ services:
       - edge
 
   order-expiry:
+    build:
+      context: ..
+      dockerfile: docker/web.Dockerfile
     image: mysite-codex-web:latest
     container_name: mysite-codex-order-expiry
     restart: unless-stopped
@@ -132,6 +135,9 @@ services:
       - internal
 
   image-derivatives:
+    build:
+      context: ..
+      dockerfile: docker/web.Dockerfile
     image: mysite-codex-web:latest
     container_name: mysite-codex-image-derivatives
     restart: unless-stopped
@@ -148,6 +154,9 @@ services:
       - internal
 
   video-worker:
+    build:
+      context: ..
+      dockerfile: docker/identity.Dockerfile
     image: mysite-codex-identity:latest
     container_name: mysite-codex-video-worker
     restart: unless-stopped
@@ -170,6 +179,9 @@ services:
       - internal
 
   points-worker:
+    build:
+      context: ..
+      dockerfile: docker/identity.Dockerfile
     image: mysite-codex-identity:latest
     container_name: mysite-codex-points-worker
     restart: unless-stopped
