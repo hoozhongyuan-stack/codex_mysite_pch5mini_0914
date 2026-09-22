@@ -9,12 +9,13 @@ WORKDIR /app
 
 FROM base AS deps
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY patches ./patches
+RUN pnpm config set registry https://registry.npmmirror.com
 RUN pnpm install --frozen-lockfile
 
 FROM deps AS build
 COPY . .
 ENV DEPLOY_TARGET=node
-RUN pnpm config set registry https://registry.npmmirror.com
 RUN pnpm run build:uat
 
 FROM base AS runner
