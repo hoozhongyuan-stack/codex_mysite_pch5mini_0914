@@ -289,7 +289,7 @@ export function UsersManager() {
     <>
       <div className="heading-row">
         <div>
-          <h1>访客用户</h1>
+          <h1>会员管理</h1>
           <p className="muted">独立邮箱账号，与后台管理员权限分离。</p>
         </div>
         <SiteLink className="btn" href="/zh/account">
@@ -323,7 +323,7 @@ export function UsersManager() {
         </Table>
         {!users.length && (
           <div className="empty-state">
-            {loading ? '正在读取…' : error || '暂无注册访客'}
+            {loading ? '正在读取…' : error || '暂无注册会员'}
           </div>
         )}
       </section>

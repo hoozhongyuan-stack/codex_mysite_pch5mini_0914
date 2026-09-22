@@ -1,4 +1,5 @@
 import { syncOrderPoints } from "@/lib/order-points";
+import { notifyPoints } from "@/lib/notification-center.mjs";
 import {
   admin,
   csrf,
@@ -149,13 +150,18 @@ export async function POST(request: Request, { params }: any) {
       throw new HttpError(404, "未知操作");
     await limited("points-admin:" + user.userId, 100);
     const data = await jsonBody(request);
-    return Response.json(
-      await identity("admin-points-" + action, {
-        ...data,
-        _staff: staff(request),
-      }),
-      { headers: { "Cache-Control": "no-store" } },
-    );
+    const result = await identity("admin-points-" + action, {
+      ...data,
+      _staff: staff(request),
+    });
+    if (action === "adjust" && result?.changed)
+      await notifyPoints({
+        userId: Number(data.userId),
+        amount: Number(data.amount),
+        title: "后台积分调整",
+        reason: String(data.reason || "积分调整"),
+      });
+    return Response.json(result, { headers: { "Cache-Control": "no-store" } });
   } catch (e) {
     return fail(e);
   }

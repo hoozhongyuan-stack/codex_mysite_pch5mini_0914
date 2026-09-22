@@ -48,10 +48,10 @@ export const groups = [
     ],
   },
   {
-    label: '访客与洞察',
+    label: '会员与洞察',
     icon: Users,
     items: [
-      ['users', '访客用户'],
+      ['users', '会员管理'],
       ['points', '积分管理'],
       ['geo', 'GEO 洞察'],
     ],

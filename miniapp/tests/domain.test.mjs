@@ -11,4 +11,7 @@ test('entry destinations route cart/media independently and preserve direct list
  assert.equal(destinationUrl({target:'event',contentId:'e-1'}),'/pages/salons/index?id=e-1');
  assert.throws(()=>destinationUrl({target:'video',contentId:'../bad'}));
  assert.equal(destinationUrl({target:'products'}),'/pages/index/index?target=products');
+ assert.equal(destinationUrl({target:'microPage',contentId:'page-1'}),'/pages/custom/index?id=page-1');
 });
+
+test('navigation accepts micro page entries with content ids',()=>{const items=[{target:'home',label:'首页',enabled:true},{target:'microPage',contentId:'page-1',label:'专题',enabled:true}];assert.equal(navigation({enabled:true,items}).length,2);assert.throws(()=>navigation({enabled:true,items:[items[0],{...items[1],contentId:''}]}));});

@@ -109,7 +109,9 @@ def visitor_user(data):
 
 def registration_dict(r,private=False):
     result={'id':r.pk,'eventId':r.event_id,'name':r.name,'email':r.email,'answers':r.answers,'fields':r.fields,'status':r.status,'checkedAt':r.checked_at.isoformat() if r.checked_at else None,'checkinMethod':r.checkin_method,'checkinActor':r.checkin_actor,'created':r.created.isoformat(),'note':r.note}
-    if not private:
+    if private:
+        result['userId']=r.user_id
+    else:
         result.pop('note');result.pop('checkinActor')
     return result
 

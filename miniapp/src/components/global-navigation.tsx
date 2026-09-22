@@ -6,7 +6,7 @@ import { View, Image, Text } from '@tarojs/components';
 import { configuration, image } from '../lib/api';
 import { navigation, destinationUrl } from '../lib/domain.mjs';
 import Floating from './floating';
-export default function GlobalNavigation({active='', config:provided, onChange, hidden=false, floating=true}: {active?:string;config?:any;onChange?:(target:string)=>void;hidden?:boolean;floating?:boolean}) {
+export default function GlobalNavigation({active='', config:provided, onChange, hidden=false, floating=true}: {active?:string;config?:any;onChange?:(target:string, entry?:any)=>void;hidden?:boolean;floating?:boolean}) {
   const [config,setConfig]=useState<any>(provided), [keyboard,setKeyboard]=useState(false);
   async function load(){if(provided){setConfig(provided);return;}try{setConfig((await configuration()).data)}catch{/* A failed configuration cannot safely invent navigation. */}}
   useEffect(()=>{void load()},[provided]);
@@ -15,10 +15,12 @@ export default function GlobalNavigation({active='', config:provided, onChange, 
   useEffect(()=>{const handler=(e:{height:number})=>setKeyboard(e.height>0);Taro.onKeyboardHeightChange(handler);return()=>Taro.offKeyboardHeightChange(handler)},[]);
   const items=config?.mini?navigation(config.mini.navigation):[];
   if(hidden||!config)return null;
-  function change(target:string){if(onChange){onChange(target);return;}void Taro.reLaunch({url:destinationUrl({target})})}
+  function change(entry:any){if(onChange){onChange(entry.target, entry);return;}void Taro.reLaunch({url:destinationUrl(entry)})}
   return <>{!provided&&floating&&<Floating entries={config.floating||[]} path={'/'+(Taro.getCurrentInstance().router?.path?.replace(/^\//,'').split('/')[1]||active)} raised={/pages\/(checkout|cart)\//.test(Taro.getCurrentInstance().router?.path||'')}/>}{!keyboard&&items.length>0&&<View className="bottom-nav">{items.map((entry:any)=>{
-    const icon=active===entry.target?(entry.selectedIconId||entry.iconId):entry.iconId;
-    return <ActionView key={entry.target} className={active===entry.target?'active':''} onClick={()=>change(entry.target)} role="button" ariaLabel={entry.label}>
+    const activeKey=entry.target==='microPage'?'microPage:'+entry.contentId:entry.target;
+    const selected=active===activeKey||active===entry.target;
+    const icon=selected?(entry.selectedIconId||entry.iconId):entry.iconId;
+    return <ActionView key={activeKey} className={selected?'active':''} onClick={()=>change(entry)} role="button" ariaLabel={entry.label}>
       {icon?<Image src={image(icon,'thumb')+'&v='+encodeURIComponent(config.revision||'')} mode="aspectFit" lazyLoad/>:<View className="nav-dot"/>}<Text>{entry.label}</Text>
     </ActionView>;
   })}</View>}</>;

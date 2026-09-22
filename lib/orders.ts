@@ -2,6 +2,7 @@ import { quoteStamp } from './checkout-confirmation.mjs';
 import {channelPredicate} from './mini-business.mjs';
 import { refundQuote } from './refund-domain.mjs';
 import { syncOrderPoints } from './order-points';
+import { notifyOrder } from './notification-center.mjs';
 import { database, HttpError, admin } from './server';
 import { identity, visitorSession } from './identity';
 import {
@@ -460,5 +461,28 @@ export async function actOrder(
   if (data.pointsPending) {
     try { await syncOrderPoints(id); } catch { /* Durable pending receipt is retried from points management. */ }
   }
-  return orderDetail(id, userId);
+  const finalOrder = await orderDetail(id, userId);
+  if (action === 'approve') {
+    await notifyOrder('orderPaid', {
+      userId: Number(order.user_id),
+      orderId: id,
+      orderNumber: order.order_number,
+      total: order.total,
+      currency: order.currency,
+      status: '已确认收款',
+      time: at,
+    });
+  }
+  if (action === 'ship') {
+    await notifyOrder('orderShipped', {
+      userId: Number(order.user_id),
+      orderId: id,
+      orderNumber: order.order_number,
+      total: order.total,
+      currency: order.currency,
+      status: '已发货',
+      time: at,
+    });
+  }
+  return finalOrder;
 }

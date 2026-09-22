@@ -59,6 +59,7 @@ export async function GET(request: Request) {
                 "cart",
                 "videos",
                 "events",
+                "microPage",
               ]
             : undefined,
         revision: state.revision,

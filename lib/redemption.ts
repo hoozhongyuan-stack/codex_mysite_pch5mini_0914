@@ -3,6 +3,7 @@ import { database } from './server';
 import { identity } from './identity';
 import { address, integer, text } from './order-domain.mjs';
 import { commerceConfig, orderDetail } from './orders';
+import { notifyOrder, notifyPoints } from './notification-center.mjs';
 export async function settleRedemption(id: string) {
   const db = database();
   let row = await db.prepare("SELECT * FROM orders WHERE id=? AND currency='PTS'").bind(id).first<any>();
@@ -11,6 +12,7 @@ export async function settleRedemption(id: string) {
   if (row.status === 'closed') {
     await identity('points-redemption', {...body, action:'refund'});
     await db.prepare("UPDATE orders SET data=json_set(data,'$.redemptionState','settled') WHERE id=?").bind(id).run();
+    await notifyPoints({userId:Number(row.user_id),orderId:id,amount:row.total,title:'积分兑换退回',reason:'redemption.refund'});
     return;
   }
   if (row.paid) return;
@@ -24,8 +26,12 @@ export async function settleRedemption(id: string) {
     db.prepare("UPDATE orders SET status='pending_review' WHERE id=? AND status='pending_payment'").bind(id),
     db.prepare("UPDATE orders SET status='pending_ship',paid=1,data=json_set(data,'$.redemptionState','settled') WHERE id=? AND status='pending_review' AND paid=0").bind(id),
   ]);
-  row = await db.prepare('SELECT status FROM orders WHERE id=?').bind(id).first<any>();
+  row = await db.prepare('SELECT status,order_number,total,user_id FROM orders WHERE id=?').bind(id).first<any>();
   if (row.status === 'closed') await identity('points-redemption', {...body, action:'refund'});
+  else {
+    await notifyOrder('orderPaid', {userId:Number(row.user_id),orderId:id,orderNumber:row.order_number,total:row.total,currency:'PTS',status:'积分兑换已提交',time:new Date().toISOString()});
+    await notifyPoints({userId:Number(row.user_id),orderId:id,amount:-row.total,title:'积分兑换扣减',reason:'redemption.debit'});
+  }
 }
 export async function createRedemption(user: any, input: any, channel: "website" | "mini" = "website") {
   const db = database(), key = text(input.requestKey,80,true);

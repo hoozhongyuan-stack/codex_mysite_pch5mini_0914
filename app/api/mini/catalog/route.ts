@@ -80,6 +80,32 @@ export async function GET(request: Request) {
         { headers: { 'Cache-Control': 'no-store' } },
       );
     }
+
+    const idsParam = (query.get('ids') || '').trim();
+    if (idsParam) {
+      if (actual !== 'products') throw new HttpError(400, '内容类型无效');
+      const ids = [...new Set(idsParam.split(',').map((value) => value.trim()).filter(Boolean))].slice(0, 12);
+      if (!ids.length || ids.some((value) => !/^[a-zA-Z0-9_-]{1,80}$/.test(value))) throw new HttpError(400, '内容标识无效');
+      const list = await db
+        .prepare(
+          'SELECT *' +
+            base +
+            ' AND id IN (' +
+            ids.map(() => '?').join(',') +
+            ')',
+        )
+        .bind(actual, ...ids)
+        .all<any>();
+      return Response.json(
+        {
+          rows: ids
+            .map((itemId: string) => list.results.find((r: any) => r.id === itemId))
+            .filter(Boolean)
+            .map((r: any) => card(r)),
+        },
+        { headers: { 'Cache-Control': 'no-store' } },
+      );
+    }
     if (query.get('featured') === '1') {
       const ids = (await channelState()).published?.mini?.featuredIds || [];
       if (!ids.length) return Response.json({ rows: [] });

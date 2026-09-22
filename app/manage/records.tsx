@@ -210,7 +210,7 @@ export default function Records({ kind, data }: any) {
       {new URLSearchParams(list.query).get('dashboard')==='1'&&<p role="status" className="notice">来自统计总览：中国时区 {new URLSearchParams(list.query).get('start')} 至 {new URLSearchParams(list.query).get('end')}（截止不含）。<SiteLink href={'/admin?view='+kind}>清除统计筛选</SiteLink></p>}
       <div className="heading-row">
         <div>
-          <h1>{isSub ? '表单列表' : isUser ? '访客用户' : '操作日志'}</h1>
+          <h1>{isSub ? '表单列表' : isUser ? '会员管理' : '操作日志'}</h1>
           <p className="muted">
             {isSub
               ? '查看访客提交，跟进处理进度。'

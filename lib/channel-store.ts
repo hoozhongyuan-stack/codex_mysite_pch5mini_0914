@@ -41,8 +41,26 @@ export async function checkChannelConfig(value: any, draft = false) {
         .first())
     )
       throw Error('关联表单必须已发布');
-  for (const entry of [...mini.banners,...mini.hotspotImages.flatMap(b=>b.zones)]) {
+  const componentLinks = (components: any[] = []) =>
+    components.flatMap((component) =>
+      component.type === 'banners'
+        ? component.items || []
+        : component.type === 'hotspots'
+          ? (component.items || []).flatMap((item: any) => item.zones || [])
+          : [component],
+    );
+  const componentProductIds = (components: any[] = []) =>
+    components.flatMap((component) =>
+      component.type === 'productFloor' ? component.productIds || [] : [],
+    );
+  for (const entry of [
+    ...mini.banners,
+    ...mini.hotspotImages.flatMap((b: any) => b.zones),
+    ...componentLinks(mini.homeComponents),
+    ...mini.microPages.flatMap((page: any) => componentLinks(page.components)),
+  ]) {
     if (draft || !entry.contentId) continue;
+    if (entry.target === 'microPage') continue;
     if (entry.target === 'video' || entry.target === 'event') {
       try { const result = await identity(entry.target === 'video' ? 'video-detail' : 'marketing-detail', {id:entry.contentId});
         if (entry.target==='event' && !['published','closed'].includes(result.event?.status)) throw Error('活动不可用');
@@ -51,10 +69,15 @@ export async function checkChannelConfig(value: any, draft = false) {
       continue;
     }
     const kind = (detailTargetKinds as Record<string,string>)[entry.target];
+    if (!kind) continue;
     const row = await db.prepare("SELECT data,status FROM contents WHERE id=? AND kind=? AND status='published'").bind(entry.contentId,kind).first<any>();
     if (!row || !channelVisible({...JSON.parse(row.data),status:row.status},'mini')) throw Error('关联内容必须已发布且开启小程序渠道');
   }
-  for (const id of mini.featuredIds)
+  for (const id of [
+    ...mini.featuredIds,
+    ...componentProductIds(mini.homeComponents),
+    ...mini.microPages.flatMap((page: any) => componentProductIds(page.components)),
+  ])
     if (
       !(await db
         .prepare(

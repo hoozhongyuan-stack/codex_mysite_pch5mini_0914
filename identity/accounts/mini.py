@@ -61,7 +61,10 @@ def login(data):
    from .points import reward
    reward(user,'registration')
   if not user.is_active or disabled(user) or VisitorState.objects.filter(user=user,sandbox=True).exists():raise ValueError('账号不可用')
-  VisitorState.objects.filter(user=user).update(last_login_method=PROVIDER)
+  state,_=VisitorState.objects.get_or_create(user=user)
+  state.last_login_method=PROVIDER
+  state.mini_openid_encrypted=cipher().encrypt(openid.encode()).decode()
+  state.save(update_fields=['last_login_method','mini_openid_encrypted'])
   user.last_login=timezone.now();user.save(update_fields=['last_login'])
   token=secrets.token_urlsafe(32)
   Session.objects.create(digest=digest(token),password_stamp=digest(user.password),user=user,expires=timezone.now()+timedelta(hours=2))
@@ -130,3 +133,42 @@ def bind_phone(data):
  except IntegrityError:
   raise ValueError('该手机号已绑定其他账号，请使用原账号登录') from None
  return {'user':profile(user)}
+
+
+def _wx_token(config):
+ secret=cipher().decrypt(config.secret_encrypted.encode()).decode()
+ access=request_json('https://api.weixin.qq.com/cgi-bin/token?'+urlencode({'grant_type':'client_credential','appid':config.client_id,'secret':secret}))
+ token=access.get('access_token')
+ if not isinstance(token,str) or not token: raise ValueError('微信订阅消息暂不可用，请稍后重试')
+ return token
+
+def _clean_message_data(value):
+ if not isinstance(value,dict) or len(value)>20: raise ValueError('订阅消息数据无效')
+ result={}
+ for key,item in value.items():
+  if not isinstance(key,str) or not re.fullmatch(r'[a-zA-Z]+\d{1,2}',key): raise ValueError('订阅消息字段无效')
+  if not isinstance(item,dict) or 'value' not in item: raise ValueError('订阅消息字段格式无效')
+  text=str(item.get('value','')).strip()
+  if len(text)>40: text=text[:40]
+  result[key]={'value':text or '—'}
+ return result
+
+def subscribe_send(data):
+ user=User.objects.filter(pk=data.get('userId')).first()
+ if not user or disabled(user): raise ValueError('会员不存在或不可用')
+ state=VisitorState.objects.filter(user=user).first()
+ if not state or not state.mini_openid_encrypted: raise ValueError('会员尚未重新微信登录，缺少订阅消息 openid')
+ c=SocialConfig.objects.filter(pk=PROVIDER,real_enabled=True).first()
+ if not c or not c.client_id or not c.secret_encrypted: raise ValueError('微信小程序登录未启用')
+ template_id=data.get('templateId','')
+ if not isinstance(template_id,str) or not 1<=len(template_id)<=128: raise ValueError('模板ID无效')
+ page=data.get('page','pages/account/index')
+ if not isinstance(page,str) or len(page)>128 or page.startswith('/') or '://' in page: raise ValueError('跳转页面无效')
+ openid=cipher().decrypt(state.mini_openid_encrypted.encode()).decode()
+ token=_wx_token(c)
+ body={'touser':openid,'template_id':template_id,'page':page,'data':_clean_message_data(data.get('data',{}))}
+ result=request_json('https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token='+token,body,json_body=True)
+ if result.get('errcode') not in (0,None):
+  raise ValueError('微信订阅消息发送失败：'+str(result.get('errmsg') or result.get('errcode')))
+ Audit.objects.create(actor='system',action='mini-subscribe-send',target=str(user.pk))
+ return {'ok':True,'errcode':result.get('errcode',0)}

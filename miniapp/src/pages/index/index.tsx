@@ -16,6 +16,7 @@ import { navigation, destinationUrl } from '../../lib/domain.mjs';
 import Catalog, { Cards } from '../../components/catalog';
 import Floating from '../../components/floating';
 import GlobalNavigation from '../../components/global-navigation';
+import MiniPageComponents from '../../components/mini-page-components';
 import { homeShare } from '../../lib/share.mjs';
 const labels: Record<string, string> = {
   home: '首页',
@@ -61,15 +62,15 @@ export default function Index() {
   });
   useEffect(()=>{void Taro.setNavigationBarTitle({title:target==='home'?(config?.brand?.name||'首页'):labels[target]||'首页'})},[target,config?.brand?.name]);
   const nav = config ? navigation(config.mini.navigation) : [];
-  const change = (next: string) => {
-    if (['cart','videos','events','salons'].includes(next)) {void Taro.reLaunch({url:destinationUrl({target:next})});return;}
+  const change = (next: string, entry:any={target:next}) => {
+    if (['cart','videos','events','salons','microPage'].includes(next)) {void Taro.reLaunch({url:destinationUrl(entry)});return;}
     if (!labels[next]) return;
     setTarget(next);
     void Taro.pageScrollTo({ scrollTop: 0, duration: 0 });
   };
   function openLink(value:any) {
     try {
-      if(labels[value.target]){change(value.target);return;}
+      if(labels[value.target]){change(value.target,value);return;}
       void Taro.navigateTo({url:destinationUrl(value)}).catch(()=>Taro.showToast({title:'页面暂不可用，请返回重试',icon:'none'}));
     }catch(e){void Taro.showToast({title:(e as Error).message,icon:'none'});}
   }
@@ -101,6 +102,7 @@ export default function Index() {
             {config.mini.description && (
               <Text className="intro">{config.mini.description}</Text>
             )}
+            <MiniPageComponents components={config.mini.homeComponents || []} onOpen={openLink}/>
             {config.mini.banners.length > 0 && (
               <Swiper
                 className="banners"

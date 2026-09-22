@@ -1,4 +1,6 @@
-export const targets = ['home', 'products', 'articles', 'points', 'account', 'cart', 'videos', 'events'];
+export const targets = ['home', 'products', 'articles', 'points', 'account', 'cart', 'videos', 'events', 'microPage'];
+const detailTargets = ['product','article','form','video','event','microPage'];
+function keyOf(value){return `${value.target || ''}:${value.contentId || ''}`}
 export function navigation(value) {
   if (!value?.enabled) return [];
   if (!Array.isArray(value.items)) throw Error('导航配置无效');
@@ -6,13 +8,14 @@ export function navigation(value) {
   if (
     items.length < 2 ||
     items.length > 5 ||
-    new Set(items.map((i) => i.target)).size !== items.length ||
+    new Set(items.map(keyOf)).size !== items.length ||
     items.some(
       (i) =>
         !targets.includes(i.target) ||
         typeof i.label !== 'string' ||
         !i.label ||
-        i.label.length > 12,
+        i.label.length > 12 ||
+        (i.target === 'microPage' && !/^[a-zA-Z0-9_-]{1,80}$/.test(i.contentId || '')),
     )
   )
     throw Error('导航配置不受当前版本支持');
@@ -47,9 +50,10 @@ export function destinationUrl(value) {
  const target=value.target==='salons'?'events':value.target;
  const base={cart:'/pages/cart/index',videos:'/pages/videos/index',events:'/pages/salons/index'};
  if(base[target])return base[target];
- if(['product','article','form','video','event'].includes(target)) {
+ if(detailTargets.includes(target)) {
   if(!/^[a-zA-Z0-9_-]{1,80}$/.test(value.contentId||'')) throw Error('此内容暂不可用，请返回选择其他内容');
   const id=encodeURIComponent(value.contentId);
+  if(target==='microPage')return '/pages/custom/index?id='+id;
   if(target==='video')return '/pages/videos/index?id='+id;
   if(target==='event')return '/pages/salons/index?id='+id;
   if(target==='form')return '/pages/form/index?id='+id;

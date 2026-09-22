@@ -27,7 +27,8 @@ export default function Account({initialScreen='overview',embedded=false,onShop,
     [nickname, setNickname] = useState(''),
     [avatarUrl, setAvatarUrl] = useState(''),
     [sessionLoading, setSessionLoading] = useState(Boolean(token())),
-    [phoneHint, setPhoneHint] = useState('');
+    [phoneHint, setPhoneHint] = useState(''),
+    [showEmailLogin, setShowEmailLogin] = useState(false);
   const returnAfterLogin=useRef(initialScreen==='login');
   const intended=useRef(initialScreen==='login'?'overview':initialScreen);
   const agreed = useRef(false);
@@ -180,11 +181,13 @@ export default function Account({initialScreen='overview',embedded=false,onShop,
           <Text className="login-intro">登录后同步订单、积分、收货地址与个人资料</Text>
           {consent}
           {status?.enabled && <ActionButton className="wechat-login" loading={busy} disabled={busy} onClick={() => login(true)}>微信一键登录</ActionButton>}
-          <Text className="login-divider">或使用邮箱登录</Text>
-          <Text className="login-label">邮箱</Text><ActionInput className="field-input" value={email} placeholder="已有账号邮箱" onInput={(e) => setEmail(e.detail.value)} />
-          <Text className="login-label">密码</Text><ActionInput className="field-input" password value={password} placeholder="密码" onInput={(e) => setPassword(e.detail.value)} />
-          <ActionButton loading={busy} disabled={busy} onClick={() => login(false)}>邮箱登录</ActionButton>
-          <Text className="intro">已有网站账号可用邮箱登录；首次微信登录将创建或关联小程序账户。</Text>
+          <ActionButton className="email-toggle" disabled={busy} onClick={() => setShowEmailLogin(!showEmailLogin)}>{showEmailLogin ? '收起邮箱登录' : '使用邮箱登录'}</ActionButton>
+          {showEmailLogin && <View className="email-login-fields">
+            <Text className="login-label">邮箱</Text><ActionInput className="field-input" value={email} placeholder="已有账号邮箱" onInput={(e) => setEmail(e.detail.value)} />
+            <Text className="login-label">密码</Text><ActionInput className="field-input" password value={password} placeholder="密码" onInput={(e) => setPassword(e.detail.value)} />
+            <ActionButton loading={busy} disabled={busy} onClick={() => login(false)}>邮箱登录</ActionButton>
+          </View>}
+          <Text className="intro">推荐使用微信信任登录；已有网站账号可展开邮箱登录。</Text>
         </View>
       ) : (
         <>

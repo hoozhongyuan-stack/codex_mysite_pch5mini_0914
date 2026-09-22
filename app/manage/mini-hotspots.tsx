@@ -2,7 +2,7 @@
 import {useState} from 'react';
 import MiniLinkPicker from './mini-link-picker';
 import {Field} from './shared';
-export default function MiniHotspots({items,onChange,selectImage,contents,onSave,busy,message}:any){
+export default function MiniHotspots({items,onChange,selectImage,contents,microPages,onSave,busy,message}:any){
  const [drawing,setDrawing]=useState<any>(null),[active,setActive]=useState('');
  const update=(i:number,value:any)=>onChange(items.map((b:any,j:number)=>j===i?value:b));
  const round=(v:number)=>Math.round(v*100)/100;
@@ -15,7 +15,7 @@ export default function MiniHotspots({items,onChange,selectImage,contents,onSave
  <img src={'/api/media/'+b.imageId} alt={'热区图片 '+(i+1)} draggable={false}/>
  {b.zones.map((z:any,j:number)=><span key={j} className={'hotspot-outline '+(active===i+':'+j?'selected':'')} style={{left:z.x+'%',top:z.y+'%',width:z.width+'%',height:z.height+'%'}}>{j+1}</span>)}
  {drawing?.i===i&&<span className="hotspot-outline" style={{left:Math.min(drawing.start.x,drawing.end.x)+'%',top:Math.min(drawing.start.y,drawing.end.y)+'%',width:Math.abs(drawing.start.x-drawing.end.x)+'%',height:Math.abs(drawing.start.y-drawing.end.y)+'%'}}/>}</div><p className="muted">拖动添加区域；也可点击下方按钮后填写坐标。</p><button className="btn" disabled={b.zones.length>=20} onClick={()=>{update(i,{...b,zones:[...b.zones,{label:'热区 '+(b.zones.length+1),x:0,y:0,width:20,height:20,target:'products',contentId:''}]});setActive(i+':'+b.zones.length)}}>添加热区</button></div>
- <div className="hotspot-properties">{b.zones.map((z:any,j:number)=><details key={j} open={active===i+':'+j}  ><summary onClick={e=>{e.preventDefault();setActive(active===i+':'+j?'':i+':'+j)}}>热区 {j+1} · {z.label}</summary><Field label="名称" value={z.label} onChange={(label:string)=>zoneUpdate(i,j,{label})}/><MiniLinkPicker value={z} contents={contents} onChange={(next:any)=>zoneUpdate(i,j,next)}/><div className="hotspot-coordinates">{[['x','左侧 %'],['y','顶部 %'],['width','宽度 %'],['height','高度 %']].map(([k,l])=><label key={k}>{l}<input type="number" min="0" max="100" step="0.01" value={Math.round(z[k]*100)/100} onChange={e=>zoneUpdate(i,j,{[k]:Number(e.target.value)})}/></label>)}</div><button className="btn" onClick={()=>update(i,{...b,zones:b.zones.filter((_:any,k:number)=>k!==j)})}>删除热区</button></details>)}</div></div></div>)}
+ <div className="hotspot-properties">{b.zones.map((z:any,j:number)=><details key={j} open={active===i+':'+j}  ><summary onClick={e=>{e.preventDefault();setActive(active===i+':'+j?'':i+':'+j)}}>热区 {j+1} · {z.label}</summary><Field label="名称" value={z.label} onChange={(label:string)=>zoneUpdate(i,j,{label})}/><MiniLinkPicker value={z} contents={contents} microPages={microPages} onChange={(next:any)=>zoneUpdate(i,j,next)}/><div className="hotspot-coordinates">{[['x','左侧 %'],['y','顶部 %'],['width','宽度 %'],['height','高度 %']].map(([k,l])=><label key={k}>{l}<input type="number" min="0" max="100" step="0.01" value={Math.round(z[k]*100)/100} onChange={e=>zoneUpdate(i,j,{[k]:Number(e.target.value)})}/></label>)}</div><button className="btn" onClick={()=>update(i,{...b,zones:b.zones.filter((_:any,k:number)=>k!==j)})}>删除热区</button></details>)}</div></div></div>)}
  <div className="mini-section-actions"><span role="status">{message || '热区随首页草稿保存；发布配置后生效。'}</span><button aria-busy={Boolean(busy)} className="btn primary" disabled={busy} onClick={onSave}>保存热区草稿</button></div>
 
  </section>

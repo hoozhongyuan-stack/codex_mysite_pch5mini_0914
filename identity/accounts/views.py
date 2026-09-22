@@ -96,13 +96,14 @@ def endpoint(request,action):
     try:
         data=json.loads(request.body)
         if not isinstance(data,dict): raise ValueError('请求格式错误')
-        if action in ('mini-status','mini-login','mini-profile','mini-phone'):
+        if action in ('mini-status','mini-login','mini-profile','mini-phone','mini-subscribe-send'):
             from . import mini
             if action=='mini-login':rate('mini:'+str(data.get('_ip','')),30)
             if action=='mini-status': result=mini.status()
             elif action=='mini-login': result=mini.login(data)
             elif action=='mini-profile': result=mini.save_profile(data)
-            else: result=mini.bind_phone(data)
+            elif action=='mini-phone': result=mini.bind_phone(data)
+            else: result=mini.subscribe_send(data)
             return JsonResponse(result)
         if action.startswith('admin-points-'):
             from .staff_auth import current

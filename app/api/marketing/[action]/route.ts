@@ -4,6 +4,7 @@ import { marketingAccess } from '@/lib/marketing-access';
 import { database } from '@/lib/server';
 import { validateRich, richAssets } from '@/lib/cms-domain.mjs';
 import { allowsFormalEventSave } from '@/lib/marketing-mode.mjs';
+import { notifyEvent } from '@/lib/notification-center.mjs';
 const readAdmin = ['list', 'detail', 'registrations', 'grants', 'access','qr'];
 const writeAdmin = [
   'save',
@@ -110,10 +111,33 @@ export async function POST(
             .run();
         }
       }
-      return Response.json(
-        await identity('admin-marketing-' + a, normalized, user.email),
-        { headers: { 'Cache-Control': 'no-store' } },
-      );
+      const result = await identity('admin-marketing-' + a, normalized, user.email);
+      if (a === 'save' && normalized.notify === true && result?.event?.id) {
+        let page = 1;
+        let pages = 1;
+        do {
+          const registrations = await identity(
+            'admin-marketing-registrations',
+            { id: result.event.id, status: 'active', page, pageSize: 100 },
+            user.email,
+          );
+          pages = Number(registrations?.pages || 1);
+          for (const row of registrations?.rows || []) {
+            if (!row?.userId) continue;
+            await notifyEvent('eventChanged', {
+              userId: Number(row.userId),
+              eventId: result.event.id,
+              registrationId: row.id,
+              title: result.event.titleZh || result.event.titleEn || '沙龙会通知',
+              status: result.event.status === 'cancelled' ? '已取消' : '活动已更新',
+              time: result.event.starts,
+              location: result.event.locationZh || result.event.addressZh || result.event.locationEn || result.event.addressEn,
+            });
+          }
+          page += 1;
+        } while (page <= pages);
+      }
+      return Response.json(result, { headers: { 'Cache-Control': 'no-store' } });
     }
     if (!['register', 'cancel', 'checkin'].includes(action))
       throw new HttpError(404, '未知操作');
@@ -153,6 +177,21 @@ export async function POST(
         .prepare('UPDATE submission_files SET submission_id=? WHERE id=?')
         .bind('event:' + result.registration.id, id)
         .run();
+    if (action === 'register' && result?.registration?.id) {
+      const user = (await identity('session', { session })).user;
+      if (user?.id) {
+        const event = (await identity('marketing-detail', { id: data.id })).event;
+        await notifyEvent('eventRegistered', {
+          userId: Number(user.id),
+          eventId: data.id,
+          registrationId: result.registration.id,
+          title: event?.titleZh || event?.titleEn || '沙龙会报名',
+          status: '已报名',
+          time: event?.starts,
+          location: event?.locationZh || event?.addressZh || event?.locationEn || event?.addressEn,
+        });
+      }
+    }
     return Response.json(result, { headers: { 'Cache-Control': 'no-store' } });
   } catch (e) {
     return fail(e);

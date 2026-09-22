@@ -19,7 +19,8 @@ export default function ChannelSettings({ data, floatingOnly = false }: any) {
     [busy, setBusy] = useState(false),
     [picker, setPicker] = useState<any>(null),
     [dirty, setDirty] = useState(false);
-  const [tab, setTab] = useAdminTab('miniTab','base',['base','home','nav','checks']);
+  const [notificationRecords, setNotificationRecords] = useState<any[]>([]);
+  const [tab, setTab] = useAdminTab('miniTab','base',['base','home','micros','nav','notify','checks']);
   useAdminUnsavedChanges(dirty, ['miniTab']);
   const load = async () => {
     const r = await fetch('/api/channel-config?admin=1');
@@ -32,6 +33,16 @@ export default function ChannelSettings({ data, floatingOnly = false }: any) {
   useEffect(() => {
     load().catch((e) => setMessage(e.message));
   }, []);
+  useEffect(() => {
+    if (tab !== 'notify') return;
+    fetch('/api/notification-center')
+      .then(async (r) => {
+        const d: any = await r.json();
+        if (!r.ok) throw Error(d.error);
+        setNotificationRecords(d.records || []);
+      })
+      .catch((e) => setMessage(e.message));
+  }, [tab]);
   const change = (next: any) => {
     setForm(next);
     setDirty(true);
@@ -116,6 +127,7 @@ export default function ChannelSettings({ data, floatingOnly = false }: any) {
       </div>
     </div>
   );
+
   async function save(action: string) {
     setBusy(true);
     setMessage('');
@@ -151,6 +163,64 @@ export default function ChannelSettings({ data, floatingOnly = false }: any) {
   if (!form) return <div className="panel">{message || '正在读取配置…'}</div>;
   const m = form.mini,
     n = m.navigation;
+  const publishedProducts = data.contents.filter((p: any) => p.kind === 'products' && p.status === 'published');
+  const componentLabel = (type: string) =>
+    type === 'search' ? '搜索框' :
+    type === 'notice' ? '公告栏' :
+    type === 'divider' ? '辅助线' :
+    type === 'banners' ? '轮播图' :
+    type === 'hotspots' ? '图片热区' :
+    type === 'productFloor' ? '商品楼层' : '页面组件';
+  const componentControls = (components: any[], set: (v: any[]) => void) => (
+    <div className="mini-component-list">
+      <div className="flex-actions mini-component-add">
+        <button className="btn" onClick={() => set([...components, { id: crypto.randomUUID(), type: 'search', enabled: true, placeholder: '搜索商品', scope: 'products' }])}>添加搜索框</button>
+        <button className="btn" onClick={() => set([...components, { id: crypto.randomUUID(), type: 'notice', enabled: true, text: '请输入公告内容', target: '' }])}>添加公告栏</button>
+        <button className="btn" onClick={() => set([...components, { id: crypto.randomUUID(), type: 'divider', enabled: true, style: 'line' }])}>添加辅助线</button>
+        <button className="btn" onClick={() => set([...components, { id: crypto.randomUUID(), type: 'banners', enabled: true, items: [] }])}>添加轮播图</button>
+        <button className="btn" onClick={() => set([...components, { id: crypto.randomUUID(), type: 'hotspots', enabled: true, items: [] }])}>添加图片热区</button>
+        <button className="btn" onClick={() => set([...components, { id: crypto.randomUUID(), type: 'productFloor', enabled: true, title: '精选商品', productIds: [] }])}>添加商品楼层</button>
+      </div>
+      {!components.length && <p className="mini-empty">尚未添加装修组件。微页面和首页都可添加搜索框、公告栏、辅助线、轮播图、图片热区和商品楼层。</p>}
+      {components.map((c: any, i: number) => {
+        const updateComponent = (next: any) => set(components.map((row: any, j: number) => (j === i ? next : row)));
+        const updateBanner = (index: number, next: any) => updateComponent({ ...c, items: (c.items || []).map((row: any, j: number) => j === index ? next : row) });
+        return <div className="footer-config-card mini-component-row" key={c.id || i}>
+          <div className="heading-row"><b>{componentLabel(c.type)}</b>{controls(components, set, i)}</div>
+          <label><input type="checkbox" checked={c.enabled !== false} onChange={e => updateComponent({ ...c, enabled: e.target.checked })}/> 显示</label>
+          {c.type === 'search' ? <div className="field-grid"><Field label="占位文字" value={c.placeholder || '搜索商品'} onChange={(v: string) => updateComponent({ ...c, placeholder: v })}/><Choice label="搜索范围" value={c.scope || 'products'} items={[[ 'products','商品' ],[ 'articles','文章' ],[ 'videos','视频' ],[ 'events','沙龙会' ],[ 'points','积分商品' ]]} onChange={(v: string) => updateComponent({ ...c, scope: v })}/></div> : null}
+          {c.type === 'notice' ? <><Field label="公告内容" value={c.text || ''} onChange={(v: string) => updateComponent({ ...c, text: v })}/><MiniLinkPicker value={c} contents={data.contents} microPages={m.microPages || []} onChange={updateComponent}/></> : null}
+          {c.type === 'divider' ? <Choice label="样式" value={c.style || 'line'} items={[[ 'line','细线' ],[ 'dashed','虚线' ],[ 'space','留白' ]]} onChange={(v: string) => updateComponent({ ...c, style: v })}/> : null}
+          {c.type === 'banners' ? <div className="mini-nested-list">
+            <div className="heading-row"><span className="muted">最多5张，发布时每张需选择图片和跳转目标。</span><button className="btn" disabled={(c.items || []).length >= 5} onClick={() => setPicker({ apply: (imageId: string) => updateComponent({ ...c, items: [...(c.items || []), { imageId, title: '', target: 'home' }] }) })}>添加轮播</button></div>
+            {(c.items || []).map((b: any, index: number) => <div className="footer-config-card mini-nested-card" key={index}>
+              <div className="heading-row"><b>轮播 {index + 1}</b>{controls(c.items || [], (items:any[]) => updateComponent({ ...c, items }), index)}</div>
+              {image(b.imageId, (v: string) => updateBanner(index, { ...b, imageId: v }), '轮播图片')}
+              <Field label="标题" value={b.title || ''} onChange={(v: string) => updateBanner(index, { ...b, title: v })}/>
+              <MiniLinkPicker value={b} contents={data.contents} microPages={m.microPages || []} onChange={(next:any)=>updateBanner(index, next)}/>
+            </div>)}
+            {!(c.items || []).length && <p className="mini-empty">尚未添加轮播图。</p>}
+          </div> : null}
+          {c.type === 'hotspots' ? <div className="mini-nested-list"><MiniHotspots items={c.items || []} onChange={(items:any)=>updateComponent({ ...c, items })} selectImage={(apply:any)=>setPicker({apply})} contents={data.contents} microPages={m.microPages || []} onSave={()=>save('save')} busy={busy} message={message}/></div> : null}
+          {c.type === 'productFloor' ? <div className="mini-nested-list">
+            <Field label="楼层标题" value={c.title || '精选商品'} onChange={(v: string) => updateComponent({ ...c, title: v })}/>
+            <p className="muted">选择本组件展示的商品，最多12个。留空时该楼层不展示商品。</p>
+            <div className="mini-featured-options compact">
+              {publishedProducts.map((p: any) => {
+                const selected = (c.productIds || []).includes(p.id);
+                return <label key={p.id} style={{ display: 'block', padding: '8px 0' }}><input type="checkbox" checked={selected} onChange={(e)=>{
+                  const ids = c.productIds || [];
+                  updateComponent({ ...c, productIds: e.target.checked ? [...ids, p.id].slice(0, 12) : ids.filter((id: string) => id !== p.id) });
+                }}/> {p.titleZh}</label>;
+              })}
+            </div>
+          </div> : null}
+        </div>;
+      })}
+    </div>
+  );
+  const microPages = m.microPages || [];
+  const setMicroPages = (pages: any[]) => mini('microPages', pages);
   return (
     <section className="channel-settings">
       <div className="heading-row">
@@ -184,7 +254,7 @@ export default function ChannelSettings({ data, floatingOnly = false }: any) {
       )}
       {!floatingOnly && (
         <AdminTabs label="小程序配置栏目" value={tab} items={[
-          ['base','基础配置'],['home','首页装修'],['nav','底部导航'],['checks','版本与检查']
+          ['base','基础配置'],['home','首页装修'],['micros','微页面管理'],['nav','底部导航'],['notify','通知中心'],['checks','版本与检查']
         ]} onChange={setTab}/>
       )}
       <div className="panel" style={{ marginTop: 20 }}>
@@ -386,6 +456,7 @@ export default function ChannelSettings({ data, floatingOnly = false }: any) {
                 onChange={(v: string) => mini('description', v)}
               />
             </div>
+            <details className="mini-module" open><summary>页面组件 · {(m.homeComponents || []).length}</summary><section className="mini-section">{componentControls(m.homeComponents || [], (v:any[])=>mini('homeComponents',v))}</section></details>
             <details className="mini-module" open><summary>轮播图 · {m.banners.length}/5</summary><section className="mini-section"><div className="heading-row"><h3>轮播图</h3><button className="btn" disabled={m.banners.length>=5} onClick={()=>setPicker({apply:(imageId:string)=>mini('banners',[...m.banners,{title:'',imageId,target:'products'}])})}>添加轮播</button></div>
             {m.banners.map((b: any, i: number) => (
               <div className="footer-config-card" key={i}>
@@ -400,11 +471,11 @@ export default function ChannelSettings({ data, floatingOnly = false }: any) {
                   value={b.title}
                   onChange={(v: string) => update('banners', i, 'title', v)}
                 />
-                <MiniLinkPicker value={b} contents={data.contents} onChange={(next:any)=>mini('banners',m.banners.map((row:any,j:number)=>i===j?next:row))}/>
+                <MiniLinkPicker value={b} contents={data.contents} microPages={m.microPages || []} onChange={(next:any)=>mini('banners',m.banners.map((row:any,j:number)=>i===j?next:row))}/>
               </div>
             ))}
             {!m.banners.length && <p className="mini-empty">尚未添加轮播图。每张图可关联一个目标页面。</p>}</section></details>
-            <details className="mini-module" open><summary>图片热区 · {(m.hotspotImages || []).length} 张</summary><MiniHotspots items={m.hotspotImages || []} onChange={(v:any)=>mini('hotspotImages',v)} selectImage={(apply:any)=>setPicker({apply})} contents={data.contents} onSave={()=>save('save')} busy={busy} message={message}/></details>
+            <details className="mini-module" open><summary>图片热区 · {(m.hotspotImages || []).length} 张</summary><MiniHotspots items={m.hotspotImages || []} onChange={(v:any)=>mini('hotspotImages',v)} selectImage={(apply:any)=>setPicker({apply})} contents={data.contents} microPages={m.microPages || []} onSave={()=>save('save')} busy={busy} message={message}/></details>
             <details className="mini-module" open><summary>商品楼层 · {m.productFloor?.enabled !== false ? '显示' : '隐藏'}</summary><section className="mini-section"><div className="field-grid"><label className="field"><span>展示设置</span><label><input type="checkbox" checked={m.productFloor?.enabled !== false} onChange={e=>mini('productFloor',{...(m.productFloor||{}),enabled:e.target.checked})}/> 在小程序首页展示商品楼层</label></label><Field label="楼层标题" value={m.productFloor?.title || '精选商品'} onChange={(v:string)=>mini('productFloor',{...(m.productFloor||{}),title:v})}/></div><p className="muted">关闭后不请求或展示首页推荐商品；已发布商品仍可从商城访问。</p></section></details>
             <details className="mini-module"><summary>推荐商品 · {m.featuredIds.length}/12</summary><div className="mini-featured-options">
             {data.contents
@@ -431,6 +502,48 @@ export default function ChannelSettings({ data, floatingOnly = false }: any) {
                   {p.titleZh}
                 </label>
               ))}</div></details>
+          </>
+        ) : tab === 'micros' ? (
+          <>
+            <div className="heading-row"><div><h2>微页面管理</h2><p className="muted">微页面复用首页装修组件。发布后的微页面可被底部导航、轮播图和图片热区跳转。</p></div><button className="btn" onClick={() => setMicroPages([...microPages, { id: crypto.randomUUID(), title: '新微页面', description: '', status: 'draft', components: [] }])}>新建微页面</button></div>
+            {!microPages.length && <p className="mini-empty">暂无微页面。新建后可配置组件并发布。</p>}
+            {microPages.map((page: any, i: number) => {
+              const patch = (next: any) => setMicroPages(microPages.map((row: any, j: number) => j === i ? next : row));
+              return <details className="mini-module" open key={page.id || i}><summary>{page.title || '未命名微页面'} · {page.status === 'published' ? '已发布' : page.status === 'archived' ? '已下架' : '草稿'}</summary><section className="mini-section">
+                <div className="heading-row"><b>页面设置</b><div className="flex-actions"><button className="btn" disabled={!i} onClick={() => setMicroPages(microPages.map((row: any, j: number) => j === i ? microPages[i-1] : j === i-1 ? page : row))}>上移</button><button className="btn" onClick={() => setMicroPages([...microPages, { ...page, id: crypto.randomUUID(), title: (page.title || '微页面') + ' 副本', status: 'draft' }])}>复制</button><button className="btn" onClick={() => patch({ ...page, status: page.status === 'published' ? 'archived' : 'published' })}>{page.status === 'published' ? '下架' : '发布'}</button><button className="btn" onClick={() => setMicroPages(microPages.filter((_: any, j: number) => j !== i))}>删除</button></div></div>
+                <div className="field-grid"><Field label="页面标题" value={page.title || ''} onChange={(v: string) => patch({ ...page, title: v })}/><Field label="页面说明" value={page.description || ''} onChange={(v: string) => patch({ ...page, description: v })}/></div>
+                {componentControls(page.components || [], (components:any[]) => patch({ ...page, components }))}
+              </section></details>;
+            })}
+          </>
+        ) : tab === 'notify' ? (
+          <>
+            <div className="heading-row"><div><h2>通知中心</h2><p className="muted">第二期先配置微信订阅消息模板、业务触发开关和会员通知记录框架；真实微信发送接入后再写入发送状态。</p></div></div>
+            <section className="mini-section">
+              <label><input type="checkbox" checked={m.notificationCenter?.enabled === true} onChange={e=>mini('notificationCenter',{...(m.notificationCenter||{}),enabled:e.target.checked})}/> 启用通知中心配置</label>
+              <div className="notification-template-grid">
+                {[['order','订单通知'],['event','活动通知'],['points','积分通知']].map(([key,label])=>{
+                  const current = m.notificationCenter?.templates?.[key] || {};
+                  const updateTemplate = (patch:any) => mini('notificationCenter',{...(m.notificationCenter||{}),templates:{...(m.notificationCenter?.templates||{}),[key]:{...current,...patch}}});
+                  return <div className="footer-config-card" key={key}>
+                    <div className="heading-row"><b>{label}</b><label><input type="checkbox" checked={current.enabled === true} onChange={e=>updateTemplate({enabled:e.target.checked})}/> 启用</label></div>
+                    <Field label="微信订阅消息模板ID" value={current.templateId || ''} onChange={(v:string)=>updateTemplate({templateId:v})}/>
+                    <Field label="备注" value={current.note || ''} onChange={(v:string)=>updateTemplate({note:v})}/>
+                  </div>;
+                })}
+              </div>
+            </section>
+            <section className="mini-section">
+              <h3>触发场景</h3>
+              <div className="notification-trigger-grid">
+                {[['orderPaid','订单支付/提交后'],['orderShipped','订单发货后'],['eventRegistered','沙龙会报名后'],['eventChanged','沙龙会变更时'],['pointsChanged','积分变动时']].map(([key,label])=><label key={key}><input type="checkbox" checked={m.notificationCenter?.triggers?.[key] === true} onChange={e=>mini('notificationCenter',{...(m.notificationCenter||{}),triggers:{...(m.notificationCenter?.triggers||{}),[key]:e.target.checked}})}/> {label}</label>)}
+              </div>
+            </section>
+            <section className="mini-section">
+              <h3>会员通知记录</h3>
+              <p className="muted">记录保留最近200条。当前阶段只建立记录存储与后台查看，微信发送执行会在第二期后续触发接入中写入 sent / failed / skipped 状态。</p>
+              <div className="admin-table-wrap"><table className="admin-table compact-table"><thead><tr><th>时间</th><th>类型</th><th>触发</th><th>对象</th><th>状态</th><th>说明</th></tr></thead><tbody>{notificationRecords.length?notificationRecords.map((row:any)=><tr key={row.id}><td>{row.createdAt}</td><td>{row.type}</td><td>{row.trigger || '—'}</td><td>{row.target || '—'}</td><td>{row.status}</td><td>{row.message || '—'}</td></tr>):<tr><td colSpan={6}>暂无通知记录。</td></tr>}</tbody></table></div>
+            </section>
           </>
         ) : tab === 'nav' ? (
           <>
@@ -462,8 +575,9 @@ export default function ChannelSettings({ data, floatingOnly = false }: any) {
                     label="页面"
                     value={item.target}
                     items={miniTargets.filter(([key])=>miniReadyTargets.includes(key))}
-                    onChange={(v: string) => navUpdate(i, 'target', v)}
+                    onChange={(v: string) => mini('navigation',{...n,items:n.items.map((row:any,j:number)=>i===j?{...row,target:v,contentId:''}:row)})}
                   />
+                  {item.target === 'microPage' && <Choice label="微页面" value={item.contentId || ''} items={(m.microPages || []).filter((p:any)=>p.status==='published').map((p:any)=>[p.id,p.title])} onChange={(v:string)=>navUpdate(i,'contentId',v)}/>}
                   {image(
                     item.iconId,
                     (v) => navUpdate(i, 'iconId', v),
@@ -520,7 +634,7 @@ export default function ChannelSettings({ data, floatingOnly = false }: any) {
                 ? n.items
                     .filter((x: any) => x.enabled)
                     .map((x: any) => (
-                      <span key={x.target}>
+                      <span key={x.target+':' +(x.contentId||'')}>
                         {x.iconId && (
                           <img
                             alt=""

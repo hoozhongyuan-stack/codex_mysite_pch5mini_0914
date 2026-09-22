@@ -69,7 +69,7 @@ const menus = [
   ['assets', '素材中心', Images],
 
   ['admins', '管理员', Users],
-  ['users', '访客用户', Users],
+  ['users', '会员管理', Users],
   ['policies', '协议与政策', FileText],
   ['geo', 'GEO 洞察', ScanSearch],
   ['themes', '主题模板', Palette],

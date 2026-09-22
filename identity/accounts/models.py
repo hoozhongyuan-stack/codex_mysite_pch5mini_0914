@@ -47,6 +47,7 @@ class VisitorState(models.Model):
     phone_review_status = models.CharField(max_length=16, default='unreviewed')
     phone_reviewed_at = models.DateTimeField(null=True, blank=True)
     phone_reviewed_by = models.CharField(max_length=254, default='', blank=True)
+    mini_openid_encrypted = models.TextField(default='', blank=True)
     class Meta:
         constraints = [
             models.UniqueConstraint(

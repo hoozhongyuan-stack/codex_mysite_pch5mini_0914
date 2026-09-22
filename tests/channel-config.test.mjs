@@ -143,3 +143,67 @@ test('all entry types support cart and media links with draft-only incomplete de
  assert.throws(()=>validateMini({...base,banners:[{imageId:'img',target:'video'}]}),/关联内容/);
  assert.doesNotThrow(()=>validateMini({...base,banners:[{imageId:'img',target:'video'}]},{draft:true}));
 });
+
+test('home components and micro pages validate and link through published entries', () => {
+ const value=validateMini({
+  navigation:{enabled:true,items:[nav[0],{label:'专题',target:'microPage',contentId:'page-1',enabled:true}]},
+  homeComponents:[
+    {id:'search-1',type:'search',placeholder:'搜索商品',scope:'products'},
+    {id:'notice-1',type:'notice',text:'新品上线',target:'microPage',contentId:'page-1'},
+    {id:'line-1',type:'divider',style:'dashed'},
+    {id:'banner-1',type:'banners',items:[{imageId:'hero',title:'专题图',target:'microPage',contentId:'page-1'}]},
+    {id:'hotspot-1',type:'hotspots',items:[{imageId:'map',zones:[{label:'商品',target:'product',contentId:'product-1',x:0,y:0,width:40,height:40}]}]},
+    {id:'floor-1',type:'productFloor',title:'精选商品',productIds:['product-1','product-1','product-2']},
+  ],
+  microPages:[{id:'page-1',title:'品牌专题',status:'published',components:[
+    {id:'p-search',type:'search'},
+    {id:'p-banner',type:'banners',items:[{imageId:'page-hero',target:'home'}]},
+    {id:'p-hotspot',type:'hotspots',items:[{imageId:'page-map',zones:[{label:'文章',target:'article',contentId:'article-1',x:10,y:10,width:20,height:20}]}]},
+    {id:'p-floor',type:'productFloor',title:'页面商品',productIds:['product-3']},
+  ]}],
+ });
+ assert.equal(value.homeComponents.length,6);
+ assert.equal(value.microPages[0].components[1].type,'banners');
+ assert.deepEqual(value.homeComponents[5].productIds,['product-1','product-2']);
+ assert.equal(value.navigation.items[1].contentId,'page-1');
+});
+
+test('published micro page links must target published micro pages', () => {
+ assert.throws(()=>validateMini({
+  navigation:{enabled:true,items:[nav[0],{label:'专题',target:'microPage',contentId:'missing',enabled:true}]},
+  microPages:[{id:'page-1',title:'品牌专题',status:'draft',components:[]}],
+ }),/微页面|关联内容/);
+ assert.doesNotThrow(()=>validateMini({
+  navigation:{enabled:true,items:[nav[0],{label:'专题',target:'microPage',enabled:true}]},
+  microPages:[{id:'page-1',title:'品牌专题',status:'draft',components:[]}],
+ },{draft:true}));
+});
+
+
+test('notification center validates template config and triggers', () => {
+ const value=validateMini({
+  notificationCenter:{
+    enabled:true,
+    templates:{order:{enabled:true,templateId:'tmpl_order_1',note:'订单状态'},event:{enabled:true,templateId:'tmpl_event_1'},points:{enabled:false}},
+    triggers:{orderPaid:true,eventRegistered:true,pointsChanged:true},
+  },
+ });
+ assert.equal(value.notificationCenter.enabled,true);
+ assert.equal(value.notificationCenter.templates.order.templateId,'tmpl_order_1');
+ assert.equal(value.notificationCenter.triggers.orderPaid,true);
+ assert.equal(value.notificationCenter.triggers.orderShipped,false);
+});
+
+test('notification requests map triggers to safe mini program pages and data', async () => {
+ const {buildNotificationRequest}=await import('../lib/notification-template.mjs');
+ const order=buildNotificationRequest('order','orderShipped',{userId:7,orderId:'ord-1',orderNumber:'NO-1',total:12800,currency:'CNY',status:'已发货'},'tmpl_order');
+ assert.equal(order.page,'pages/account/index?section=orders&id=ord-1');
+ assert.equal(order.data.amount3.value,'¥128.00');
+ assert.equal(order.data.phrase4.value,'已发货');
+ const event=buildNotificationRequest('event','eventRegistered',{eventId:'ev 1',title:'沙龙会',status:'已报名',location:'深圳'},'tmpl_event');
+ assert.equal(event.page,'pages/salons/index?id=ev%201');
+ assert.equal(event.data.thing1.value,'沙龙会');
+ const points=buildNotificationRequest('points','pointsChanged',{amount:-10,balance:90,title:'积分兑换'},'tmpl_points');
+ assert.equal(points.page,'pages/account/index?section=points');
+ assert.equal(points.data.number2.value,'-10');
+});

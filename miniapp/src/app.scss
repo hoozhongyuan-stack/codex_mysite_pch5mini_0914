@@ -434,3 +434,71 @@ button[disabled] {
 @media(prefers-reduced-motion:reduce){.interaction-field{transition:none;}}
 
 .login-divider{display:block;text-align:center;color:#8a9688;font-size:12px;margin:18px 0 8px}.wechat-login{width:100%;background:#2f6b45}.category-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px!important}.category-grid text{display:block;text-align:center;padding:10px 8px!important}.card:nth-child(3n) .cover{aspect-ratio:4/5}.card:nth-child(4n) .cover{aspect-ratio:5/4}
+.email-toggle{width:100%;margin-top:10px;background:#eef2e9;color:#2f503d}.email-login-fields{margin-top:12px}.mini-decor-search{height:46px;border:1px solid #dfe8db;border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 16px;margin:14px 0 12px;color:#7d8c7b;font-size:14px;box-sizing:border-box}.mini-decor-search text:last-child{color:#2d4c39;font-weight:600}.mini-decor-notice{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px;margin:10px 0;padding:10px 12px;border-radius:12px;background:#edf4e9;color:#2d4c39;font-size:13px;line-height:1.5;box-sizing:border-box}.mini-decor-notice text:first-child{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mini-decor-divider{margin:14px 0}.mini-decor-divider.line{height:1px;background:#e0e8dc}.mini-decor-divider.dashed{height:0;border-top:1px dashed #cfd9ca}.mini-decor-divider.space{height:18px}
+.mini-decor-search {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  margin: 10px 0 14px;
+  border: 1px solid #dfe7d9;
+  border-radius: 14px;
+  background: #fff;
+  color: #788378;
+}
+.mini-decor-search text:last-child {
+  color: #2d4c39;
+  font-weight: 600;
+}
+.mini-decor-notice {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  margin: 10px 0 14px;
+  border-radius: 12px;
+  background: #edf2ea;
+  color: #2d4c39;
+}
+.mini-decor-notice text:first-child {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mini-decor-divider {
+  margin: 18px 0;
+}
+.mini-decor-divider.line,
+.mini-decor-divider.dashed {
+  height: 1px;
+  border-top: 1px solid #dfe7d9;
+}
+.mini-decor-divider.dashed {
+  border-top-style: dashed;
+}
+.mini-decor-divider.space {
+  height: 18px;
+}
+.mini-decor-banners {
+  margin: 14px 0 18px;
+}
+.mini-decor-hotspots {
+  display: grid;
+  gap: 18px;
+  margin: 14px 0 18px;
+}
+.mini-hotspot-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+}
+.mini-hotspot-frame image {
+  width: 100%;
+  display: block;
+}
+.mini-decor-product-floor {
+  margin-top: 18px;
+}
