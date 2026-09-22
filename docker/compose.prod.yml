@@ -2,7 +2,7 @@ name: mysite-codex
 
 services:
   db:
-    image: postgres:18
+    image: postgres:16
     container_name: mysite-codex-db
     restart: unless-stopped
     environment:
