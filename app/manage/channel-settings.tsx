@@ -7,7 +7,7 @@ import MiniLinkPicker from './mini-link-picker';
 import MiniHotspots from './mini-hotspots';
 import MiniLoginSettings from './mini-login-settings';
 import './channel-settings.css';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Smartphone, Plus, ArrowUp, ArrowDown, Trash2 } from 'lucide-react';
 import { Field, Choice } from './shared';
 import AssetPicker from './asset-picker';
@@ -27,6 +27,7 @@ export default function ChannelSettings({ data, floatingOnly = false }: any) {
   const [auditForm, setAuditForm] = useState({ address: 'pages/index/index', title: '首页', tag: '品牌 内容 商城', first_class: '', first_id: '', second_class: '', second_id: '', third_class: '', third_id: '' });
   const [releaseQr, setReleaseQr] = useState('');
   const [releaseKeyFile, setReleaseKeyFile] = useState<File | null>(null);
+  const releaseKeyInput = useRef<HTMLInputElement>(null);
   const [tab, setTab] = useAdminTab('miniTab','base',['base','home','micros','nav','notify','release','checks']);
   useAdminUnsavedChanges(dirty, ['miniTab']);
   const load = async () => {
@@ -179,6 +180,7 @@ export default function ChannelSettings({ data, floatingOnly = false }: any) {
       const result: any = await response.json();
       if (!response.ok) throw Error(result.error || '上传密钥失败');
       setReleaseKeyFile(null);
+      if (releaseKeyInput.current) releaseKeyInput.current.value = '';
       await loadReleaseState();
       setMessage('代码上传密钥已保存。');
     } catch (error) {
@@ -687,7 +689,16 @@ export default function ChannelSettings({ data, floatingOnly = false }: any) {
               <MiniLoginSettings onSaved={() => loadReleaseState().catch((error) => setMessage(error.message))}/>
               <div className="mini-release-key-upload">
                 <div><b>代码上传密钥</b><p className="muted">从微信公众平台下载 .key 文件后在这里上传。只有站点所有者可以更换；文件内容不会在后台回显。</p></div>
-                <div className="flex-actions"><input type="file" accept=".key,text/plain" aria-label="选择代码上传密钥文件" disabled={!releaseState?.canManageKey || Boolean(releaseBusy)} onChange={(event) => setReleaseKeyFile(event.target.files?.[0] || null)}/><button className="btn primary" disabled={!releaseState?.canManageKey || !releaseKeyFile || Boolean(releaseBusy)} aria-busy={releaseBusy === 'key'} onClick={uploadReleaseKey}>上传密钥</button></div>
+                <div className="mini-release-key-actions">
+                  <div className="mini-release-key-selection">
+                    <label className="mini-release-file-picker">
+                      <input ref={releaseKeyInput} type="file" accept=".key,text/plain" aria-label="选择代码上传密钥文件" disabled={!releaseState?.canManageKey || Boolean(releaseBusy)} onChange={(event) => setReleaseKeyFile(event.target.files?.[0] || null)}/>
+                      选择 .key 文件
+                    </label>
+                    <span className={releaseKeyFile ? 'mini-release-file-name selected' : 'mini-release-file-name'} aria-live="polite" title={releaseKeyFile?.name || undefined}>{releaseKeyFile?.name || '尚未选择文件'}</span>
+                  </div>
+                  <button className="btn primary" disabled={!releaseState?.canManageKey || !releaseKeyFile || Boolean(releaseBusy)} aria-busy={releaseBusy === 'key'} onClick={uploadReleaseKey}>{releaseBusy === 'key' ? '上传中…' : '上传密钥'}</button>
+                </div>
               </div>
               {!releaseState?.canManageKey && <p className="muted">更换上传密钥需要站点所有者权限。</p>}
               <p className="muted">微信公众平台的“代码上传 IP 白名单”仍需管理员在微信侧设置；这是微信平台的安全规则。</p>

@@ -47,4 +47,17 @@
 @media(max-width:1280px){.admin-workspace .channel-settings .mini-builder-layout{grid-template-columns:1fr}.admin-workspace .channel-settings .mini-builder-preview{position:static}.admin-workspace .channel-settings .mini-phone-frame{width:min(360px,100%)}}
 @media(max-width:1100px){.admin-workspace .channel-settings .mini-release-status-list{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-workspace .channel-settings .mini-audit-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:760px){.admin-workspace .channel-settings .mini-product-floor-settings,.admin-workspace .channel-settings .mini-release-status-list,.admin-workspace .channel-settings .mini-audit-grid{grid-template-columns:1fr}.admin-workspace .channel-settings .mini-page-toolbar{align-items:flex-start;flex-direction:column}}
-.admin-workspace .channel-settings .mini-release-key-upload{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:18px 0;border-top:1px solid #e6e4ef}.admin-workspace .channel-settings .mini-release-key-upload p{margin:6px 0 0;max-width:65ch}.admin-workspace .channel-settings .mini-release-key-upload input[type=file]{max-width:300px;font-size:13px}.admin-workspace .channel-settings .mini-release-key-upload .flex-actions{flex-wrap:wrap}@media(max-width:900px){.admin-workspace .channel-settings .mini-release-key-upload{align-items:flex-start;flex-direction:column}}
+.admin-workspace .channel-settings .mini-release-key-upload{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,420px);align-items:center;gap:16px 24px;padding:20px 0;border-top:1px solid #e6e4ef}
+.admin-workspace .channel-settings .mini-release-key-upload p{margin:6px 0 0;max-width:65ch}
+.admin-workspace .channel-settings .mini-release-key-actions,.admin-workspace .channel-settings .mini-release-key-selection{display:flex;align-items:center;min-width:0;gap:10px}
+.admin-workspace .channel-settings .mini-release-key-selection{flex:1;padding:6px;border:1px solid #dedce7;border-radius:10px;background:#fbfaff}
+.admin-workspace .channel-settings .mini-release-file-picker{position:relative;flex:none;min-height:36px;padding:0 12px;border:1px solid #d8d3ec;border-radius:7px;background:#fff;color:#5144a8;font-weight:600;cursor:pointer;white-space:nowrap}
+.admin-workspace .channel-settings .mini-release-file-picker:hover{border-color:#6950d9;background:#f6f3ff}
+.admin-workspace .channel-settings .mini-release-file-picker:focus-within{outline:2px solid #6950d9;outline-offset:2px}
+.admin-workspace .channel-settings .mini-release-file-picker:has(input:disabled){opacity:.55;cursor:not-allowed}
+.admin-workspace .channel-settings .mini-release-file-picker input{position:absolute;width:1px;height:1px;opacity:0;clip-path:inset(50%)}
+.admin-workspace .channel-settings .mini-release-file-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#676678;font-size:13px}
+.admin-workspace .channel-settings .mini-release-file-name.selected{color:#272431}
+.admin-workspace .channel-settings .mini-release-key-actions>.btn{flex:none;min-height:48px}
+@media(max-width:1100px){.admin-workspace .channel-settings .mini-release-key-upload{grid-template-columns:1fr}.admin-workspace .channel-settings .mini-release-key-actions{max-width:520px}}
+@media(max-width:560px){.admin-workspace .channel-settings .mini-release-key-actions{align-items:stretch;flex-direction:column}.admin-workspace .channel-settings .mini-release-key-actions>.btn{width:100%}}
