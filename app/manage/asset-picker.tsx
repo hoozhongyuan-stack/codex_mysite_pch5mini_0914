@@ -14,7 +14,7 @@ export default function AssetPicker(props: any) {
         <DialogHeader>
           <DialogTitle>选择素材</DialogTitle>
           <DialogDescription>
-            按文件夹查找，选择后点击确定。也可上传新素材。
+            选择已有素材，或直接上传新素材。上传完成后会自动选中，可直接确认使用。
           </DialogDescription>
         </DialogHeader>
         <MediaBrowser {...props} picker />

@@ -145,7 +145,7 @@ export default function Dashboard({ view = 'overview' }: { view?: string }) {
               <Sparkles size={21} />
             </span>
             <span>
-              GEO Studio<small>CONTENT & DISCOVERY</small>
+              爱神 AiTion<small>CONTENT & COMMERCE</small>
             </span>
           </SiteLink>
         </SidebarHeader>
@@ -340,8 +340,8 @@ export default function Dashboard({ view = 'overview' }: { view?: string }) {
             <StatisticsDashboard />
           )}
           <footer className="admin-footer">
-            <span>GEO Studio · 让内容连接更多可能</span>
-            <span>中文管理后台 · 多语言内容工作空间 · {SOFTWARE_VERSION_LABEL}</span>
+            <span>爱神 AiTion · 让内容连接更多可能</span>
+            <span>中文管理后台 · 多语言内容工作空间 · {SOFTWARE_VERSION_DETAIL}</span>
           </footer>
         </main>
       </SidebarInset>

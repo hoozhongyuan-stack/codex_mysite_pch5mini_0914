@@ -64,14 +64,25 @@ export default function FooterSocials({
               </>
             );
             return s.kind === 'qr' ? (
-              <button
-                type="button"
-                key={i}
-                onClick={() => setSelected(s)}
-                aria-haspopup="dialog"
-              >
-                {inner}
-              </button>
+              <div className="footer-social-card" key={i}>
+                <button
+                  type="button"
+                  onClick={() => setSelected(s)}
+                  aria-haspopup="dialog"
+                >
+                  {inner}
+                </button>
+                {s.imageId && (
+                  <button
+                    type="button"
+                    className="footer-social-qr"
+                    onClick={() => setSelected(s)}
+                    aria-label={(label || '') + (en ? ' QR code' : '二维码')}
+                  >
+                    <img src={'/api/media/' + s.imageId} alt="" />
+                  </button>
+                )}
+              </div>
             ) : (
               <SiteLink key={i} href={s.url} target="_blank" rel="noreferrer">
                 {inner}

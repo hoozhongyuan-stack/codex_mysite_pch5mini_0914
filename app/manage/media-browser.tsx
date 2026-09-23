@@ -36,8 +36,7 @@ export default function MediaBrowser({
     [selected, setSelected] = useState<any[]>(
       initialIds.map((id: string) => ({ id })),
     ),
-    [preview, setPreview] = useState<any>(null),
-    [tab, setTab] = useState('library');
+    [preview, setPreview] = useState<any>(null);
   const refresh = () => setVersion((v) => v + 1);
   useEffect(() => {
     const c = new AbortController();
@@ -153,7 +152,6 @@ export default function MediaBrowser({
       }
     }
     setBusy(false);
-    setTab('library');
     setPage(1);
     refresh();
     setMessage(
@@ -161,26 +159,34 @@ export default function MediaBrowser({
     );
   }
   return (
-    <div className="media-browser">
+    <div className={'media-browser ' + (picker ? 'picker-mode' : '')}>
+      {picker && (
+        <div className="media-picker-dropzone">
+          <span>
+            <strong>选择已有素材，或直接上传新素材</strong>
+            上传成功后会自动选中，可直接确认使用。
+          </span>
+          <label className="btn primary">
+            {busy ? '处理中…' : type === 'image' ? '上传图片' : '上传视频'}
+            <input
+              type="file"
+              multiple
+              hidden
+              disabled={busy}
+              accept={
+                type === 'image'
+                  ? 'image/png,image/jpeg,image/webp,image/gif'
+                  : 'video/mp4,video/webm'
+              }
+              onChange={(e) => {
+                upload(e.target.files);
+                e.target.value = '';
+              }}
+            />
+          </label>
+        </div>
+      )}
       <div className="media-toolbar">
-        {picker && (
-          <>
-            <button
-              type="button"
-              className={'btn ' + (tab === 'library' ? 'primary' : '')}
-              onClick={() => setTab('library')}
-            >
-              素材库
-            </button>
-            <button
-              type="button"
-              className={'btn ' + (tab === 'upload' ? 'primary' : '')}
-              onClick={() => setTab('upload')}
-            >
-              本地上传
-            </button>
-          </>
-        )}
         {accept === 'all' && (
           <>
             <button
@@ -199,7 +205,7 @@ export default function MediaBrowser({
             </button>
           </>
         )}
-        {(!picker || tab === 'upload') && (
+        {!picker && (
           <label className="btn primary">
             {busy ? '处理中…' : type === 'image' ? '上传图片' : '上传视频'}
             <input
@@ -282,12 +288,7 @@ export default function MediaBrowser({
           </button>
         </aside>
         <div className="media-content">
-          {tab === 'upload' && (
-            <p role="status" className="notice">
-              使用上方上传按钮选择文件，上传到当前文件夹后可直接选用。单个文件最大
-              30 MB。
-            </p>
-          )}
+
           {loading ? (
             <p className="empty-state">正在加载…</p>
           ) : (

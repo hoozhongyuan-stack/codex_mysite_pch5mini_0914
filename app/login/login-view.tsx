@@ -69,9 +69,9 @@ export default function LoginView() {
           <span className="brand-icon">
             <Sparkles />
           </span>
-          GEO Studio
+          爱神 AiTion
         </div>
-        <p className="eyebrow">CONTENT × DISCOVERY</p>
+        <p className="eyebrow">CONTENT × COMMERCE</p>
         <h1>
           让思想生长，
           <br />

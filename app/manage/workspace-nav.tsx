@@ -11,6 +11,7 @@ import {
   Users,
   Settings,
   Smartphone,
+  Globe2,
   ChevronDown,
 } from 'lucide-react';
 export const groups = [
@@ -22,7 +23,6 @@ export const groups = [
       ['products', '商品管理'],
       ['productCategories', '商品分类'],
       ['orders', '订单管理'],
-      ['commerce', '交易设置'],
     ],
   },
   {
@@ -57,14 +57,21 @@ export const groups = [
     ],
   },
   {
-    label: '网站与系统',
-    icon: Settings,
+    label: '网站管理',
+    icon: Globe2,
     items: [
       ['settings', '网站设置'],
       ['floating', '悬浮入口'],
       ['navigation', '导航管理'],
       ['themes', '主题模板'],
       ['policies', '协议与政策'],
+    ],
+  },
+  {
+    label: '系统设置',
+    icon: Settings,
+    items: [
+      ['commerce', '交易设置'],
       ['accounts', '账号与权限'],
     ],
   },

@@ -10,8 +10,8 @@ export const ORIGIN =
   "https://geo-studio-hub.hopezhongyuan.chatgpt.site";
 export const defaults = {
   theme: "tech",
-  nameZh: "GEO Studio",
-  nameEn: "GEO Studio",
+  nameZh: "爱神 AiTion",
+  nameEn: "AiTion",
   descriptionZh: "把专业经验变成有价值的内容，让每一次探索都有清晰的答案。",
   descriptionEn:
     "Thoughtful ideas, useful products and clear answers. Discover what comes next.",

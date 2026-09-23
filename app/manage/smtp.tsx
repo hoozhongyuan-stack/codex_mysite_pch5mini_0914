@@ -8,7 +8,7 @@ export default function SmtpSettings({onSaved}:any) {
       port: 465,
       username: '',
       sender: '',
-      senderName: 'GEO Studio',
+      senderName: '爱神 AiTion',
       enabled: false,
       password: '',
     }),

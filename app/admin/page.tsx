@@ -6,7 +6,7 @@ import { admin } from '@/lib/server';
 import { Sparkles } from 'lucide-react';
 export const dynamic = 'force-dynamic';
 export const metadata = {
-  title: 'GEO Studio · 中文管理后台',
+  title: '爱神 AiTion · 中文管理后台',
   robots: { index: false, follow: false },
 };
 export default async function Home({

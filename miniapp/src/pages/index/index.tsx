@@ -123,14 +123,13 @@ export default function Index() {
             {(config.mini.hotspotImages || []).map((b:any,i:number)=><View key={i} style={{position:'relative',marginBottom:'24px'}}>
               <Image src={image(b.imageId,'hero')+'&v='+encodeURIComponent(config.revision||'')} mode="widthFix" style={{width:'100%',display:'block'}} lazyLoad/>
               {b.zones.map((z:any,j:number)=><ActionView key={j} ariaLabel={z.label} role="button" style={{position:'absolute',left:z.x+'%',top:z.y+'%',width:z.width+'%',height:z.height+'%'}} onClick={()=>openLink(z)}/>)}</View>)}
-            <View className='home-quick-links'>{nav.filter((n:any)=>['products','articles'].includes(n.target)).map((n:any)=><ActionView key={n.target} onClick={()=>change(n.target)}>{n.iconId&&<Image src={image(n.iconId,'thumb')} mode='aspectFit' lazyLoad/>}<Text>{n.label} ›</Text></ActionView>)}</View>
             {rows.length > 0 && (
               <>
                 <Text className="section-title">{config.mini.productFloor?.title || '精选商品'}</Text>
                 <Cards rows={rows} />
               </>
             )}
-            {!rows.length && !config.mini.banners.length && !config.mini.hotspotImages?.length && (
+            {!rows.length && !(config.mini.homeComponents || []).length && !config.mini.banners.length && !config.mini.hotspotImages?.length && (
               <View className="empty">暂无推荐内容</View>
             )}
           </>

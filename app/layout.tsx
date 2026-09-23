@@ -6,7 +6,7 @@ import { headers } from 'next/headers';
 export async function generateMetadata(): Promise<Metadata> {
  const settings=await siteSettings();
  return {
-  title: 'GEO Studio · 内容与发现',
+  title: '爱神 AiTion · 内容与发现',
   description: '多语言品牌内容、产品与 GEO 可发现性管理。',
   ...(settings.brand?.faviconId ? {icons:{icon:'/api/media/'+settings.brand.faviconId,apple:'/api/media/'+settings.brand.faviconId}} : {}),
  };

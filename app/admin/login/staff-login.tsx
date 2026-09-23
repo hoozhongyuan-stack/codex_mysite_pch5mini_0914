@@ -3,7 +3,7 @@ import { useState } from 'react';
 import Particles from './particles';
 import PasswordField from './password-field';
 import SiteLink from '@/components/site-link';
-import { SOFTWARE_VERSION_LABEL } from '@/lib/app-version';
+import { SOFTWARE_VERSION_DETAIL, SOFTWARE_VERSION_LABEL } from '@/lib/app-version';
 import '../../admin-compact.css';
 export default function StaffLogin({ profile = false }: any) {
   const [message, setMessage] = useState(''),
@@ -80,8 +80,9 @@ export default function StaffLogin({ profile = false }: any) {
           </p>
         )}
         {!profile && (
-          <p className="staff-login-version" aria-label={`当前软件版本 ${SOFTWARE_VERSION_LABEL}`}>
-            {SOFTWARE_VERSION_LABEL}
+          <p className="staff-login-version" aria-label={`当前软件版本 ${SOFTWARE_VERSION_DETAIL}`}>
+            {SOFTWARE_VERSION_LABEL}<br />
+            <span>{SOFTWARE_VERSION_DETAIL}</span>
           </p>
         )}
       </form>

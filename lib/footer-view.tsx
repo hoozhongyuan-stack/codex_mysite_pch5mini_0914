@@ -55,7 +55,7 @@ export default function Footer({
   return (
     <footer className="site-footer">
       <div className="footer-inner">
-        <div className="footer-grid">
+        <div className="footer-grid footer-grid-balanced">
           <section className="footer-brand-block">
             <a className="footer-brand" href={`/${lang}`}>
               {f?.logoId ? (
@@ -68,7 +68,7 @@ export default function Footer({
             {description && <p>{description}</p>}
           </section>
           {navigation.length > 0 && (
-            <section>
+            <section className="footer-nav-block">
               <h2>{en ? 'Explore' : '快捷导航'}</h2>
               <nav
                 className="footer-links"
@@ -107,7 +107,7 @@ export default function Footer({
             </section>
           )}
           {socials.length > 0 && (
-            <section>
+            <section className="footer-social-block">
               <h2>{en ? 'Connect with us' : '关注我们'}</h2>
               <FooterSocials items={socials} en={en} />
             </section>
