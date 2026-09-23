@@ -12,6 +12,7 @@ import { Smartphone, Plus, ArrowUp, ArrowDown, Trash2 } from 'lucide-react';
 import { Field, Choice } from './shared';
 import AssetPicker from './asset-picker';
 import { miniTargets, miniReadyTargets, validateMini } from '@/lib/channel-config.mjs';
+import { SOFTWARE_VERSION } from '@/lib/app-version';
 export default function ChannelSettings({ data, floatingOnly = false }: any) {
   const [state, setState] = useState<any>(null),
     [form, setForm] = useState<any>(null),
@@ -20,7 +21,12 @@ export default function ChannelSettings({ data, floatingOnly = false }: any) {
     [picker, setPicker] = useState<any>(null),
     [dirty, setDirty] = useState(false);
   const [notificationRecords, setNotificationRecords] = useState<any[]>([]);
-  const [tab, setTab] = useAdminTab('miniTab','base',['base','home','micros','nav','notify','checks']);
+  const [releaseState, setReleaseState] = useState<any>(null);
+  const [releaseBusy, setReleaseBusy] = useState('');
+  const [releaseForm, setReleaseForm] = useState({ version: SOFTWARE_VERSION, desc: '小程序体验版更新' });
+  const [auditForm, setAuditForm] = useState({ address: 'pages/index/index', title: '首页', tag: '品牌 内容 商城', first_class: '', first_id: '', second_class: '', second_id: '', third_class: '', third_id: '' });
+  const [releaseQr, setReleaseQr] = useState('');
+  const [tab, setTab] = useAdminTab('miniTab','base',['base','home','micros','nav','notify','release','checks']);
   useAdminUnsavedChanges(dirty, ['miniTab']);
   const load = async () => {
     const r = await fetch('/api/channel-config?admin=1');
@@ -42,6 +48,16 @@ export default function ChannelSettings({ data, floatingOnly = false }: any) {
         setNotificationRecords(d.records || []);
       })
       .catch((e) => setMessage(e.message));
+  }, [tab]);
+  const loadReleaseState = async () => {
+    const r = await fetch('/api/mini-release');
+    const d: any = await r.json();
+    if (!r.ok) throw Error(d.error);
+    setReleaseState(d);
+  };
+  useEffect(() => {
+    if (tab !== 'release') return;
+    loadReleaseState().catch((e) => setMessage(e.message));
   }, [tab]);
   const change = (next: any) => {
     setForm(next);
@@ -127,6 +143,29 @@ export default function ChannelSettings({ data, floatingOnly = false }: any) {
       </div>
     </div>
   );
+
+  async function runRelease(action: 'preview' | 'upload' | 'submitAudit') {
+    setReleaseBusy(action);
+    setMessage('');
+    setReleaseQr('');
+    try {
+      const r = await fetch('/api/mini-release', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, ...releaseForm, audit: action === 'submitAudit' ? auditForm : undefined }),
+      });
+      const d: any = await r.json();
+      if (!r.ok) throw Error(d.error);
+      setReleaseState((prev: any) => ({ ...(prev || {}), records: d.records || prev?.records || [] }));
+      if (d.qrcodeDataUrl) setReleaseQr(d.qrcodeDataUrl);
+      setMessage(action === 'preview' ? '预览码已生成。' : action === 'upload' ? '体验版已上传到微信平台。' : '已提交微信审核。');
+      await loadReleaseState();
+    } catch (e) {
+      setMessage((e as Error).message);
+    } finally {
+      setReleaseBusy('');
+    }
+  }
 
   async function save(action: string) {
     setBusy(true);
@@ -221,6 +260,67 @@ export default function ChannelSettings({ data, floatingOnly = false }: any) {
   );
   const microPages = m.microPages || [];
   const setMicroPages = (pages: any[]) => mini('microPages', pages);
+  const contentById = new Map(data.contents.map((item: any) => [item.id, item]));
+  const productTitle = (product: any) => product?.titleZh || product?.titleEn || product?.title || '未命名商品';
+  const productPrice = (product: any) => {
+    const price = product?.trade?.price ?? product?.price ?? product?.priceCny;
+    return price ? `¥${price}` : '—';
+  };
+  const previewImage = (imageId?: string) => imageId ? `/api/media/${imageId}` : '';
+  const homePreviewComponents = [
+    ...((m.homeComponents || []).filter(Boolean)),
+    ...(m.banners?.length ? [{ id: 'legacy-banners', type: 'banners', enabled: true, items: m.banners }] : []),
+    ...((m.hotspotImages || []).length ? [{ id: 'legacy-hotspots', type: 'hotspots', enabled: true, items: m.hotspotImages }] : []),
+    {
+      id: 'legacy-products',
+      type: 'productFloor',
+      enabled: m.productFloor?.enabled !== false,
+      title: m.productFloor?.title || '精选商品',
+      productIds: m.featuredIds || [],
+    },
+  ];
+  const renderPreviewComponent = (component: any, index: number) => {
+    if (component?.enabled === false) return null;
+    if (component?.type === 'search') {
+      return <div className="mini-preview-search" key={component.id || index}>{component.placeholder || '搜索商品'}</div>;
+    }
+    if (component?.type === 'notice') {
+      return <div className="mini-preview-notice" key={component.id || index}>公告 · {component.text || '请输入公告内容'}</div>;
+    }
+    if (component?.type === 'divider') {
+      return <div className={`mini-preview-divider ${component.style || 'line'}`} key={component.id || index} />;
+    }
+    if (component?.type === 'banners') {
+      const first = (component.items || []).find((item: any) => item.imageId);
+      return <div className="mini-preview-banner" key={component.id || index}>{first ? <img src={previewImage(first.imageId)} alt={first.title || '轮播图预览'} /> : <span>轮播图预览</span>}</div>;
+    }
+    if (component?.type === 'hotspots') {
+      const first = (component.items || []).find((item: any) => item.imageId);
+      return <div className="mini-preview-hotspot" key={component.id || index}>{first ? <img src={previewImage(first.imageId)} alt="图片热区预览" /> : <span>图片热区预览</span>}<em>{(first?.hotspots || []).length || 0} 个热区</em></div>;
+    }
+    if (component?.type === 'productFloor') {
+      const ids = (component.productIds || []).slice(0, 4);
+      const products = ids.map((id: string) => contentById.get(id)).filter(Boolean);
+      return <div className="mini-preview-floor" key={component.id || index}>
+        <strong>{component.title || '精选商品'}</strong>
+        <div>{products.length ? products.map((product: any) => <article key={product.id}><div>{product.imageId ? <img src={previewImage(product.imageId)} alt={productTitle(product)} /> : <span />}</div><b>{productTitle(product)}</b><small>{productPrice(product)}</small></article>) : <p>选择商品后在这里预览</p>}</div>
+      </div>;
+    }
+    return null;
+  };
+  const MiniPagePreview = ({ title, description, components }: any) => (
+    <aside className="mini-builder-preview" aria-label="同页面预览">
+      <div className="mini-preview-label">同页面预览</div>
+      <div className="mini-phone-frame">
+        <div className="mini-phone-top"><span>9:41</span><span>•••</span></div>
+        <h3>{title || '页面标题'}</h3>
+        {description ? <p className="mini-preview-desc">{description}</p> : null}
+        <div className="mini-preview-screen">
+          {(components || []).some((item: any) => item?.enabled !== false) ? components.map(renderPreviewComponent) : <div className="mini-preview-empty">添加组件后可在这里实时预览。</div>}
+        </div>
+      </div>
+    </aside>
+  );
   return (
     <section className="channel-settings">
       <div className="heading-row">
@@ -254,7 +354,7 @@ export default function ChannelSettings({ data, floatingOnly = false }: any) {
       )}
       {!floatingOnly && (
         <AdminTabs label="小程序配置栏目" value={tab} items={[
-          ['base','基础配置'],['home','首页装修'],['micros','微页面管理'],['nav','底部导航'],['notify','通知中心'],['checks','版本与检查']
+          ['base','基础配置'],['home','首页装修'],['micros','微页面管理'],['nav','底部导航'],['notify','通知中心'],['release','版本发布'],['checks','版本与检查']
         ]} onChange={setTab}/>
       )}
       <div className="panel" style={{ marginTop: 20 }}>
@@ -442,77 +542,83 @@ export default function ChannelSettings({ data, floatingOnly = false }: any) {
             </SiteLink>
           </>
         ) : tab === 'home' ? (
-          <>
-            <h2>首页内容</h2>
-            <div className="field-grid">
-              <Field
-                label="首页标题"
-                value={m.title}
-                onChange={(v: string) => mini('title', v)}
-              />
-              <Field
-                label="简短说明"
-                value={m.description}
-                onChange={(v: string) => mini('description', v)}
-              />
-            </div>
-            <details className="mini-module" open><summary>页面组件 · {(m.homeComponents || []).length}</summary><section className="mini-section">{componentControls(m.homeComponents || [], (v:any[])=>mini('homeComponents',v))}</section></details>
-            <details className="mini-module" open><summary>轮播图 · {m.banners.length}/5</summary><section className="mini-section"><div className="heading-row"><h3>轮播图</h3><button className="btn" disabled={m.banners.length>=5} onClick={()=>setPicker({apply:(imageId:string)=>mini('banners',[...m.banners,{title:'',imageId,target:'products'}])})}>添加轮播</button></div>
-            {m.banners.map((b: any, i: number) => (
-              <div className="footer-config-card" key={i}>
-                {controls(m.banners, (v) => mini('banners', v), i)}
-                {image(
-                  b.imageId,
-                  (v) => update('banners', i, 'imageId', v),
-                  '轮播图片',
-                )}
+          <div className="mini-builder-layout">
+            <div className="mini-builder-editor">
+              <h2>首页内容</h2>
+              <div className="field-grid">
                 <Field
-                  label="标题"
-                  value={b.title}
-                  onChange={(v: string) => update('banners', i, 'title', v)}
+                  label="首页标题"
+                  value={m.title}
+                  onChange={(v: string) => mini('title', v)}
                 />
-                <MiniLinkPicker value={b} contents={data.contents} microPages={m.microPages || []} onChange={(next:any)=>mini('banners',m.banners.map((row:any,j:number)=>i===j?next:row))}/>
+                <Field
+                  label="简短说明"
+                  value={m.description}
+                  onChange={(v: string) => mini('description', v)}
+                />
               </div>
-            ))}
-            {!m.banners.length && <p className="mini-empty">尚未添加轮播图。每张图可关联一个目标页面。</p>}</section></details>
-            <details className="mini-module" open><summary>图片热区 · {(m.hotspotImages || []).length} 张</summary><MiniHotspots items={m.hotspotImages || []} onChange={(v:any)=>mini('hotspotImages',v)} selectImage={(apply:any)=>setPicker({apply})} contents={data.contents} microPages={m.microPages || []} onSave={()=>save('save')} busy={busy} message={message}/></details>
-            <details className="mini-module" open><summary>商品楼层 · {m.productFloor?.enabled !== false ? '显示' : '隐藏'}</summary><section className="mini-section"><div className="field-grid"><div className="field mini-switch-field"><span>展示设置</span><label className="mini-inline-option"><input type="checkbox" checked={m.productFloor?.enabled !== false} onChange={e=>mini('productFloor',{...(m.productFloor||{}),enabled:e.target.checked})}/> 在小程序首页展示商品楼层</label></div><Field label="楼层标题" value={m.productFloor?.title || '精选商品'} onChange={(v:string)=>mini('productFloor',{...(m.productFloor||{}),title:v})}/></div><p className="muted">关闭后不请求或展示首页推荐商品；已发布商品仍可从商城访问。</p></section></details>
-            <details className="mini-module"><summary>推荐商品 · {m.featuredIds.length}/12</summary><div className="mini-featured-options">
-            {data.contents
-              .filter(
-                (p: any) => p.kind === 'products' && p.status === 'published',
-              )
-              .map((p: any) => (
-                <label
-                  key={p.id}
-                  style={{ display: 'block', padding: '10px 0' }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={m.featuredIds.includes(p.id)}
-                    onChange={(e) =>
-                      mini(
-                        'featuredIds',
-                        e.target.checked
-                          ? [...m.featuredIds, p.id]
-                          : m.featuredIds.filter((id: string) => id !== p.id),
-                      )
-                    }
-                  />{' '}
-                  {p.titleZh}
-                </label>
-              ))}</div></details>
-          </>
+              <details className="mini-module" open><summary>页面组件 · {(m.homeComponents || []).length}</summary><section className="mini-section">{componentControls(m.homeComponents || [], (v:any[])=>mini('homeComponents',v))}</section></details>
+              <details className="mini-module" open><summary>轮播图 · {m.banners.length}/5</summary><section className="mini-section"><div className="heading-row"><h3>轮播图</h3><button className="btn" disabled={m.banners.length>=5} onClick={()=>setPicker({apply:(imageId:string)=>mini('banners',[...m.banners,{title:'',imageId,target:'products'}])})}>添加轮播</button></div>
+              {m.banners.map((b: any, i: number) => (
+                <div className="footer-config-card" key={i}>
+                  {controls(m.banners, (v) => mini('banners', v), i)}
+                  {image(
+                    b.imageId,
+                    (v) => update('banners', i, 'imageId', v),
+                    '轮播图片',
+                  )}
+                  <Field
+                    label="标题"
+                    value={b.title}
+                    onChange={(v: string) => update('banners', i, 'title', v)}
+                  />
+                  <MiniLinkPicker value={b} contents={data.contents} microPages={m.microPages || []} onChange={(next:any)=>mini('banners',m.banners.map((row:any,j:number)=>i===j?next:row))}/>
+                </div>
+              ))}
+              {!m.banners.length && <p className="mini-empty">尚未添加轮播图。每张图可关联一个目标页面。</p>}</section></details>
+              <details className="mini-module" open><summary>图片热区 · {(m.hotspotImages || []).length} 张</summary><MiniHotspots items={m.hotspotImages || []} onChange={(v:any)=>mini('hotspotImages',v)} selectImage={(apply:any)=>setPicker({apply})} contents={data.contents} microPages={m.microPages || []} onSave={()=>save('save')} busy={busy} message={message}/></details>
+              <details className="mini-module" open><summary>商品楼层 · {m.productFloor?.enabled !== false ? '显示' : '隐藏'}</summary><section className="mini-section"><div className="mini-product-floor-settings"><div className="mini-switch-panel"><span>展示设置</span><label className="mini-inline-option"><input type="checkbox" checked={m.productFloor?.enabled !== false} onChange={e=>mini('productFloor',{...(m.productFloor||{}),enabled:e.target.checked})}/> 在小程序首页展示商品楼层</label></div><Field label="楼层标题" value={m.productFloor?.title || '精选商品'} onChange={(v:string)=>mini('productFloor',{...(m.productFloor||{}),title:v})}/></div><p className="muted">关闭后不请求或展示首页推荐商品；已发布商品仍可从商城访问。</p></section></details>
+              <details className="mini-module"><summary>推荐商品 · {m.featuredIds.length}/12</summary><div className="mini-featured-options">
+              {data.contents
+                .filter(
+                  (p: any) => p.kind === 'products' && p.status === 'published',
+                )
+                .map((p: any) => (
+                  <label
+                    key={p.id}
+                    style={{ display: 'block', padding: '10px 0' }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={m.featuredIds.includes(p.id)}
+                      onChange={(e) =>
+                        mini(
+                          'featuredIds',
+                          e.target.checked
+                            ? [...m.featuredIds, p.id]
+                            : m.featuredIds.filter((id: string) => id !== p.id),
+                        )
+                      }
+                    />{' '}
+                    {p.titleZh}
+                  </label>
+                ))}</div></details>
+            </div>
+            <MiniPagePreview title={m.title || '首页'} description={m.description || ''} components={homePreviewComponents}/>
+          </div>
         ) : tab === 'micros' ? (
           <>
             <div className="heading-row"><div><h2>微页面管理</h2><p className="muted">微页面复用首页装修组件。发布后的微页面可被底部导航、轮播图和图片热区跳转。</p></div><button className="btn" onClick={() => setMicroPages([...microPages, { id: crypto.randomUUID(), title: '新微页面', description: '', status: 'draft', components: [] }])}>新建微页面</button></div>
             {!microPages.length && <p className="mini-empty">暂无微页面。新建后可配置组件并发布。</p>}
             {microPages.map((page: any, i: number) => {
               const patch = (next: any) => setMicroPages(microPages.map((row: any, j: number) => j === i ? next : row));
-              return <details className="mini-module" open key={page.id || i}><summary>{page.title || '未命名微页面'} · {page.status === 'published' ? '已发布' : page.status === 'archived' ? '已下架' : '草稿'}</summary><section className="mini-section">
-                <div className="heading-row"><b>页面设置</b><div className="flex-actions"><button className="btn" disabled={!i} onClick={() => setMicroPages(microPages.map((row: any, j: number) => j === i ? microPages[i-1] : j === i-1 ? page : row))}>上移</button><button className="btn" onClick={() => setMicroPages([...microPages, { ...page, id: crypto.randomUUID(), title: (page.title || '微页面') + ' 副本', status: 'draft' }])}>复制</button><button className="btn" onClick={() => patch({ ...page, status: page.status === 'published' ? 'archived' : 'published' })}>{page.status === 'published' ? '下架' : '发布'}</button><button className="btn" onClick={() => setMicroPages(microPages.filter((_: any, j: number) => j !== i))}>删除</button></div></div>
-                <div className="field-grid"><Field label="页面标题" value={page.title || ''} onChange={(v: string) => patch({ ...page, title: v })}/><Field label="页面说明" value={page.description || ''} onChange={(v: string) => patch({ ...page, description: v })}/></div>
-                {componentControls(page.components || [], (components:any[]) => patch({ ...page, components }))}
+              return <details className="mini-module" open key={page.id || i}><summary>{page.title || '未命名微页面'} · {page.status === 'published' ? '已发布' : page.status === 'archived' ? '已下架' : '草稿'}</summary><section className="mini-section mini-builder-layout">
+                <div className="mini-builder-editor">
+                  <div className="mini-page-toolbar"><b>页面设置</b><div className="flex-actions"><button className="btn" disabled={!i} onClick={() => setMicroPages(microPages.map((row: any, j: number) => j === i ? microPages[i-1] : j === i-1 ? page : row))}>上移</button><button className="btn" onClick={() => setMicroPages([...microPages, { ...page, id: crypto.randomUUID(), title: (page.title || '微页面') + ' 副本', status: 'draft' }])}>复制</button><button className="btn" onClick={() => patch({ ...page, status: page.status === 'published' ? 'archived' : 'published' })}>{page.status === 'published' ? '下架' : '发布'}</button><button className="btn" onClick={() => setMicroPages(microPages.filter((_: any, j: number) => j !== i))}>删除</button></div></div>
+                  <div className="field-grid"><Field label="页面标题" value={page.title || ''} onChange={(v: string) => patch({ ...page, title: v })}/><Field label="页面说明" value={page.description || ''} onChange={(v: string) => patch({ ...page, description: v })}/></div>
+                  {componentControls(page.components || [], (components:any[]) => patch({ ...page, components }))}
+                </div>
+                <MiniPagePreview title={page.title || '微页面'} description={page.description || ''} components={page.components || []}/>
               </section></details>;
             })}
           </>
@@ -543,6 +649,56 @@ export default function ChannelSettings({ data, floatingOnly = false }: any) {
               <h3>会员通知记录</h3>
               <p className="muted">记录保留最近200条。当前阶段只建立记录存储与后台查看，微信发送执行会在第二期后续触发接入中写入 sent / failed / skipped 状态。</p>
               <div className="admin-table-wrap"><table className="admin-table compact-table"><thead><tr><th>时间</th><th>类型</th><th>触发</th><th>对象</th><th>状态</th><th>说明</th></tr></thead><tbody>{notificationRecords.length?notificationRecords.map((row:any)=><tr key={row.id}><td>{row.createdAt}</td><td>{row.type}</td><td>{row.trigger || '—'}</td><td>{row.target || '—'}</td><td>{row.status}</td><td>{row.message || '—'}</td></tr>):<tr><td colSpan={6}>暂无通知记录。</td></tr>}</tbody></table></div>
+            </section>
+          </>
+        ) : tab === 'release' ? (
+          <>
+            <div className="heading-row"><div><h2>小程序版本发布</h2><p className="muted">后台内容、首页装修、底部导航和微页面发布后，小程序可直接读取；只有代码包变化才需要上传体验版并提交微信审核。</p></div><button className="btn" onClick={() => loadReleaseState().catch((e) => setMessage(e.message))}>刷新状态</button></div>
+            <section className="mini-section mini-release-workflow">
+              <div className="mini-release-step"><span>1</span><div><h3>环境准备</h3><p>先确认服务器能找到小程序构建目录、AppID 和上传密钥。全部就绪后，才能生成预览码和上传体验版。</p></div></div>
+              <div className="mini-release-status-list">
+                <div className={releaseState?.appidMasked ? 'ok' : 'warn'}><b>AppID</b><strong>{releaseState?.appidMasked || '未读取'}</strong><p>来自 WECHAT_MINI_APPID；未配置时会读取 project.config.json。</p></div>
+                <div className={releaseState?.projectExists ? 'ok' : 'warn'}><b>小程序目录</b><strong>{releaseState?.projectExists ? '已检测到' : '未找到'}</strong><p>{releaseState?.projectPath || 'miniapp/dist'}</p></div>
+                <div className={releaseState?.privateKeyExists ? 'ok' : 'warn'}><b>上传密钥</b><strong>{releaseState?.privateKeyExists ? '已检测到' : releaseState?.privateKeyConfigured ? '路径无效' : '未配置'}</strong><p>配置 WECHAT_MINI_UPLOAD_KEY_PATH，文件只放在服务器，不在后台展示。</p></div>
+                <div className={releaseState?.tokenConfigured ? 'ok' : 'warn'}><b>审核令牌</b><strong>{releaseState?.tokenConfigured ? '已配置' : '待配置'}</strong><p>提交审核需要 WECHAT_MINI_ACCESS_TOKEN；未配置时仍可预览和上传体验版。</p></div>
+              </div>
+              {!releaseState?.configured && <p className="notice">当前还不能上传体验版：请先配置 AppID、上传密钥，并确认小程序目录存在。后台配置内容本身发布后会被小程序直接读取，不需要走微信审核。</p>}
+              <div className="mini-release-config-help">
+                <b>服务器配置参考</b>
+                <code>WECHAT_MINI_APPID=小程序AppID</code>
+                <code>WECHAT_MINI_UPLOAD_KEY_PATH=/etc/aition/wechat-mini-upload.key</code>
+                <code>MINI_CI_PROJECT_PATH=/srv/aition/current/miniapp/dist（可选）</code>
+                <code>MINI_RELEASE_RECORDS=/srv/aition/shared/mini-release-records.json（可选）</code>
+                <code>WECHAT_MINI_ACCESS_TOKEN=微信接口调用令牌（提交审核时需要）</code>
+              </div>
+            </section>
+            <section className="mini-section mini-release-workflow">
+              <div className="mini-release-step"><span>2</span><div><h3>体验版</h3><p>生成预览码给手机确认；确认无误后上传体验版。机器人通道当前为 robot {releaseState?.robot || 1}。</p></div></div>
+              <div className="field-grid">
+                <Field label="版本号" value={releaseForm.version} onChange={(v: string)=>setReleaseForm({...releaseForm,version:v})}/>
+                <Field label="版本说明" value={releaseForm.desc} onChange={(v: string)=>setReleaseForm({...releaseForm,desc:v})}/>
+              </div>
+              <div className="mini-section-actions"><span>这一步只影响微信体验版代码包，不会改变后台已发布内容。</span><div className="flex-actions"><button aria-busy={releaseBusy === 'preview'} className="btn" disabled={Boolean(releaseBusy) || !releaseState?.configured} onClick={()=>runRelease('preview')}>生成预览码</button><button aria-busy={releaseBusy === 'upload'} className="btn primary" disabled={Boolean(releaseBusy) || !releaseState?.configured} onClick={()=>runRelease('upload')}>上传体验版</button></div></div>
+              {releaseQr && <div className="mini-release-qr"><img src={releaseQr} alt="小程序预览码"/><p className="muted">请使用微信扫码预览体验版。</p></div>}
+            </section>
+            <section className="mini-section mini-release-workflow">
+              <div className="mini-release-step"><span>3</span><div><h3>提交微信审核</h3><p>提交审核前需先上传体验版，并填写微信公众平台当前要求的审核页面、标签和类目。</p></div></div>
+              <div className="field-grid mini-audit-grid">
+                <Field label="审核页面路径" value={auditForm.address} onChange={(v: string)=>setAuditForm({...auditForm,address:v})}/>
+                <Field label="页面标题" value={auditForm.title} onChange={(v: string)=>setAuditForm({...auditForm,title:v})}/>
+                <Field label="标签" value={auditForm.tag} onChange={(v: string)=>setAuditForm({...auditForm,tag:v})}/>
+                <Field label="一级类目名称" value={auditForm.first_class} onChange={(v: string)=>setAuditForm({...auditForm,first_class:v})}/>
+                <Field label="一级类目ID" value={auditForm.first_id} onChange={(v: string)=>setAuditForm({...auditForm,first_id:v})}/>
+                <Field label="二级类目名称" value={auditForm.second_class} onChange={(v: string)=>setAuditForm({...auditForm,second_class:v})}/>
+                <Field label="二级类目ID" value={auditForm.second_id} onChange={(v: string)=>setAuditForm({...auditForm,second_id:v})}/>
+                <Field label="三级类目名称（选填）" value={auditForm.third_class} onChange={(v: string)=>setAuditForm({...auditForm,third_class:v})}/>
+                <Field label="三级类目ID（选填）" value={auditForm.third_id} onChange={(v: string)=>setAuditForm({...auditForm,third_id:v})}/>
+              </div>
+              <div className="mini-release-disabled"><button aria-busy={releaseBusy === 'submitAudit'} className="btn primary" disabled={Boolean(releaseBusy) || !releaseState?.actions?.submitAudit} onClick={()=>runRelease('submitAudit')}>提交微信审核</button><button className="btn" disabled>发布上线</button><span className="muted">发布上线仍保留为下一步，审核通过后再接入状态查询、发布和回滚记录。</span></div>
+            </section>
+            <section className="mini-section">
+              <h3>最近发布记录</h3>
+              <div className="admin-table-wrap"><table className="admin-table compact-table"><thead><tr><th>时间</th><th>动作</th><th>版本</th><th>状态</th><th>说明</th></tr></thead><tbody>{releaseState?.records?.length ? releaseState.records.map((row:any)=><tr key={row.id}><td>{row.finishedAt || row.createdAt}</td><td>{row.action === 'preview' ? '预览码' : row.action === 'submitAudit' ? '提交审核' : '体验版'}</td><td>{row.version}</td><td>{row.status}</td><td>{row.message || row.desc}</td></tr>) : <tr><td colSpan={5}>暂无发布记录。</td></tr>}</tbody></table></div>
             </section>
           </>
         ) : tab === 'nav' ? (
