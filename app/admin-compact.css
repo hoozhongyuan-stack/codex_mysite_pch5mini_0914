@@ -117,6 +117,19 @@
 .admin-workspace .list-pager input { width:64px; }
 .admin-workspace .list-pager form { display:flex; gap:8px; align-items:center; }
 .admin-workspace .pill { padding:3px 7px; font-size:11px; white-space:nowrap; }
+.admin-workspace .admin-version-pill {
+  background:#f7f5fb;
+  border-color:var(--admin-border);
+  color:#635b70;
+}
+.staff-login-version {
+  margin:18px 0 0;
+  text-align:center;
+  color:#81778d;
+  font-size:12px;
+  letter-spacing:.02em;
+}
+
 /* One tab treatment for settings, details and workspaces. */
 .admin-workspace :is(.admin-tabs,.settings-tabs,.operation-status-tabs,.account-access-tabs,.form-workspace-tabs,.channel-settings > .tabs,.geo-tabs) { display:flex; flex-wrap:wrap; gap:4px; border-bottom:1px solid var(--admin-border); background:transparent; padding:0; margin:0 0 20px; }
 .admin-workspace :is(.admin-tabs,.settings-tabs,.operation-status-tabs,.account-access-tabs,.form-workspace-tabs,.channel-settings > .tabs,.geo-tabs) > :is(button,a) { min-height:40px; padding:9px 14px; font-size:13px; line-height:20px; border:0; border-bottom:2px solid transparent; border-radius:0; background:transparent; color:var(--admin-muted); box-shadow:none; }

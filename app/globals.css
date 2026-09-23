@@ -1671,7 +1671,7 @@ a:focus-visible {
   color: #7851bc;
 }
 .article-detail .detail-heading {
-  max-width: 820px;
+  max-width: 1000px;
   margin: 0 auto 40px;
   text-align: center;
 }
@@ -1690,6 +1690,11 @@ a:focus-visible {
 .detail-v2 .detail-summary {
   font-size: 19px;
   line-height: 1.85;
+}
+.article-detail .detail-summary {
+  max-width: 860px;
+  margin: 24px auto 0;
+  text-align: left;
 }
 .article-cover {
   overflow: hidden;
@@ -1808,6 +1813,10 @@ a:focus-visible {
   }
   .detail-v2 .detail-summary {
     font-size: 17px;
+  }
+  .article-detail .detail-summary {
+    max-width: none;
+    margin-top: 18px;
   }
   .product-detail .detail-hero {
     grid-template-columns: 1fr;

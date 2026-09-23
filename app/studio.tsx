@@ -1,5 +1,6 @@
 'use client';
 import SiteLink from '../components/site-link';
+import { SOFTWARE_VERSION_DETAIL, SOFTWARE_VERSION_LABEL } from '@/lib/app-version';
 
 import { useRouter } from 'next/navigation';
 import StatisticsDashboard from './manage/dashboard';
@@ -213,6 +214,9 @@ export default function Dashboard({ view = 'overview' }: { view?: string }) {
           </div>
           <div className="flex-actions">
             <span className="pill green">● 工作空间</span>
+            <span className="pill admin-version-pill" title={`当前软件版本 ${SOFTWARE_VERSION_DETAIL}`}>
+              {SOFTWARE_VERSION_DETAIL}
+            </span>
             <SiteLink className="btn" href="/zh">
               <ExternalLink />
               查看前台
@@ -337,7 +341,7 @@ export default function Dashboard({ view = 'overview' }: { view?: string }) {
           )}
           <footer className="admin-footer">
             <span>GEO Studio · 让内容连接更多可能</span>
-            <span>中文管理后台 · 多语言内容工作空间</span>
+            <span>中文管理后台 · 多语言内容工作空间 · {SOFTWARE_VERSION_LABEL}</span>
           </footer>
         </main>
       </SidebarInset>
