@@ -79,6 +79,8 @@ Web 镜像包含 Node 运行时、`dist/standalone` 产物、必要脚本和生�
 
 当前 Docker Web 构建已增加小程序编译：使用 `MINI_API_ORIGIN=https://aition.art` 生成 `miniapp/dist` 并随 Web 镜像携带。小程序上传密钥和发布记录使用仅 Web 服务挂载的 `data/mini-release` 持久目录；后台站点所有者可以上传密钥并发起预览或体验版上传。既有镜像需要重新构建才包含这项能力，真实微信平台动作仍需配置代码上传 IP 白名单并验收。
 
+干净拉取后构建时，`docker/web.Dockerfile` 的 `COPY patches ./patches` 要求仓库中存在 `patches/`。即使当前没有补丁，也要保留 `patches/.gitkeep`，不能仅在服务器手工创建空目录；发布前用干净的 Git 导出目录验证 Docker 构建上下文。
+
 Web 镜像不得包含：
 
 - `.dev.vars`、`.env*`、`localmd.md`、`private-data/`。
