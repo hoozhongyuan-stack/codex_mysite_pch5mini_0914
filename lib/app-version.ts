@@ -1,5 +1,5 @@
 export const SOFTWARE_NAME = '爱神 AiTion';
-export const SOFTWARE_VERSION = 'V2.8.6';
+export const SOFTWARE_VERSION = 'V2.8.7';
 export const SOFTWARE_VERSION_DATE = '2026-09-23';
 export const SOFTWARE_DEPLOY_ENV = process.env.NEXT_PUBLIC_DEPLOY_ENV || 'Local';
 export const SOFTWARE_VERSION_LABEL = `${SOFTWARE_NAME} ${SOFTWARE_VERSION}`;

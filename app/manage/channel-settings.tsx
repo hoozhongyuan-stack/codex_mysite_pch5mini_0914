@@ -157,7 +157,7 @@ export default function ChannelSettings({ data, floatingOnly = false }: any) {
         body: JSON.stringify({ action, ...releaseForm, audit: action === 'submitAudit' ? auditForm : undefined }),
       });
       const d: any = await r.json();
-      if (!r.ok || !d.ok) throw Error(d.error || d.record?.stderr || d.record?.message || '微信发布操作失败');
+      if (!r.ok || !d.ok) throw Error(d.error || (d.record?.message !== '执行失败' ? d.record?.message : d.record?.stderr) || '微信发布操作失败');
       setReleaseState((prev: any) => ({ ...(prev || {}), records: d.records || prev?.records || [] }));
       if (d.qrcodeDataUrl) setReleaseQr(d.qrcodeDataUrl);
       setMessage(action === 'preview' ? '预览码已生成。' : action === 'upload' ? '体验版已上传到微信平台。' : '已提交微信审核。');

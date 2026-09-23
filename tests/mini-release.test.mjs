@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, stat, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, realpath, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { generateKeyPairSync } from 'node:crypto';
@@ -13,7 +13,25 @@ import {
   validateMiniReleaseInput,
   saveMiniReleaseKey,
   miniReleaseStatus,
+  prepareMiniCiWorkDir,
+  runProcess,
+  miniCiFailureMessage,
 } from '../lib/mini-release.mjs';
+
+test('mini release runs compiler in a private writable directory outside the application root', async (t) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'mini-ci-work-'));
+  t.after(async () => { const { rm } = await import('node:fs/promises'); await rm(root, { recursive: true, force: true }); });
+  const workDir = await prepareMiniCiWorkDir(path.join(root, 'output'));
+  assert.equal(workDir, path.join(root, 'output', 'work'));
+  assert.equal((await stat(workDir)).mode & 0o777, 0o700);
+  const result = await runProcess(process.execPath, ['-e', 'process.stdout.write(process.cwd())'], {
+    cwd: workDir,
+    timeoutMs: 5000,
+    secrets: [],
+  });
+  assert.equal(result.code, 0);
+  assert.equal(result.stdout, await realpath(workDir));
+});
 
 test('mini release masks appid for admin display', () => {
   assert.equal(maskAppId('wx0607272189f69483'), 'wx0607***9483');
@@ -57,6 +75,14 @@ test('mini release output sanitizer hides sensitive paths and appid', () => {
   assert.equal(cleaned.includes('/tmp/key.pem'), false);
   assert.equal(cleaned.includes('wxabc'), false);
   assert.match(cleaned, /\[hidden\]/);
+});
+
+test('mini release explains compiler directory permission errors without showing stack traces', () => {
+  assert.equal(
+    miniCiFailureMessage('Error: EACCES: permission denied, mkdir /app/hash'),
+    '小程序编译目录不可写，请检查服务器发布工作目录权限。',
+  );
+  assert.equal(miniCiFailureMessage('network timeout'), '执行失败');
 });
 
 

@@ -99,6 +99,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3001
+      NEXT_PUBLIC_DEPLOY_ENV: Production
       CMS_DATABASE_URL: postgresql://aition_cms:${POSTGRES_CMS_RUNTIME_PASSWORD:?set in .env.production}@db:5432/mysite_cms
       FILES_DIR: /data/files
       IDENTITY_URL: http://identity:3002

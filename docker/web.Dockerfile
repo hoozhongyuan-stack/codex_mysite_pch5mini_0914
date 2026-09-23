@@ -6,6 +6,8 @@ RUN corepack enable && apt-get update \
   && apt-get install -y -o Acquire::http::Timeout=30 -o Acquire::Retries=3 --no-install-recommends ca-certificates openssl \
   && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
+ARG NEXT_PUBLIC_DEPLOY_ENV=Production
+ENV NEXT_PUBLIC_DEPLOY_ENV=${NEXT_PUBLIC_DEPLOY_ENV}
 
 FROM base AS deps
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
