@@ -3,7 +3,7 @@ import { AdminFormActions } from './admin-dialog';
 import { useEffect, useState } from 'react';
 import { Field } from './shared';
 import ActionFeedback from './action-feedback';
-export default function MiniLoginSettings() {
+export default function MiniLoginSettings({ onSaved }: { onSaved?: () => void } = {}) {
   const [config, setConfig] = useState<any>(null),
     [secret, setSecret] = useState(''),
     [message, setMessage] = useState(''),
@@ -71,6 +71,7 @@ export default function MiniLoginSettings() {
               if (!r.ok) throw Error(d.error);
               setConfig(d);
               setSecret('');
+              onSaved?.();
               setTone('success');setMessage('登录配置已保存');
             } catch (e) {
               setTone('error');setMessage((e as Error).message);

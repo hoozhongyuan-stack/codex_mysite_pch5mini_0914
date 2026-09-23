@@ -21,7 +21,7 @@
 
 - 真实生产部署执行。
 - 真实域名、证书、密码、AppSecret、SMTP 授权码、微信支付密钥或短信服务商密钥。
-- 自动上传微信小程序、自动启用微信支付或自动迁移真实会员 / 交易数据。
+- 未经后台操作者主动发起的微信小程序上传、自动启用微信支付或自动迁移真实会员 / 交易数据。
 - Kubernetes、云厂商托管数据库、对象存储和 CDN 的最终采购决策。
 
 ## 2. 推荐部署形态
@@ -76,6 +76,8 @@ Web 镜像包含 Node 运行时、`dist/standalone` 产物、必要脚本和生�
 3. 执行 `npm run build:uat` 或后续改名为 `build:node` 的 Node 目标构建。
 4. 只复制 standalone 运行产物、`scripts/` 中生产 worker 必需脚本、`package.json` 和必要依赖。
 5. 镜像内使用非 root 用户运行。
+
+当前 Docker Web 构建已增加小程序编译：使用 `MINI_API_ORIGIN=https://aition.art` 生成 `miniapp/dist` 并随 Web 镜像携带。小程序上传密钥和发布记录使用仅 Web 服务挂载的 `data/mini-release` 持久目录；后台站点所有者可以上传密钥并发起预览或体验版上传。既有镜像需要重新构建才包含这项能力，真实微信平台动作仍需配置代码上传 IP 白名单并验收。
 
 Web 镜像不得包含：
 

@@ -43,6 +43,7 @@ next-env.d.ts
 # Local identity service
 /.venv/
 /private-data/
+/data/
 __pycache__/
 .dev.vars*
 

@@ -164,9 +164,13 @@ def endpoint(request,action):
             actor=request.headers.get('X-Admin-Actor','')
             if not actor: return JsonResponse({'error':'Forbidden'},status=403)
             if action.startswith('admin-marketing-'): return JsonResponse(marketing_admin.admin_action(action.removeprefix('admin-marketing-'),data,actor))
-            if action in ('admin-mini','admin-mini-save'):
+            if action in ('admin-mini','admin-mini-save','admin-mini-release-token'):
                 from . import mini
-                result=mini.status(True) if action=='admin-mini' else mini.save(data,actor)
+                if action=='admin-mini': result=mini.status(True)
+                elif action=='admin-mini-save': result=mini.save(data,actor)
+                else:
+                    rate('mini-release-token:'+actor,10)
+                    result=mini.release_access_token()
             elif action=='admin-smtp': result=mailer.public_config()
             elif action=='admin-save-smtp':
                 result=mailer.save_config(data)

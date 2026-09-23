@@ -1,5 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtemp, readFile, stat, writeFile } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { generateKeyPairSync } from 'node:crypto';
 import {
   buildMiniCiArgs,
   resolveMiniProjectPath,
@@ -7,6 +11,8 @@ import {
   maskAppId,
   sanitizeMiniCiOutput,
   validateMiniReleaseInput,
+  saveMiniReleaseKey,
+  miniReleaseStatus,
 } from '../lib/mini-release.mjs';
 
 test('mini release masks appid for admin display', () => {
@@ -83,4 +89,22 @@ test('mini release builds bounded submit audit payload', () => {
 
 test('mini release resolves project path from env when configured', () => {
   assert.equal(resolveMiniProjectPath({ MINI_CI_PROJECT_PATH: '/srv/aition/current/miniapp/dist' }), '/srv/aition/current/miniapp/dist');
+});
+
+test('owner-uploaded key stays private and enables a matching project', async (t) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'mini-release-test-'));
+  t.after(async () => { const { rm } = await import('node:fs/promises'); await rm(root, { recursive: true, force: true }); });
+  const project = path.join(root, 'project');
+  const { mkdir } = await import('node:fs/promises');
+  await mkdir(project);
+  await writeFile(path.join(project, 'project.config.json'), JSON.stringify({ appid: 'wx0607272189f69483' }));
+  const env = { MINI_RELEASE_PRIVATE_DIR: path.join(root, 'private'), MINI_CI_PROJECT_PATH: project, WECHAT_MINI_APPID: 'wx0607272189f69483', MINI_RELEASE_RECORDS: path.join(root, 'records.json') };
+  const key = Buffer.from(generateKeyPairSync('rsa', { modulusLength: 2048 }).privateKey.export({ type: 'pkcs8', format: 'pem' }));
+  await assert.rejects(saveMiniReleaseKey(Buffer.from('not a key'), env), /密钥文件/);
+  await saveMiniReleaseKey(key, env);
+  const keyPath = path.join(root, 'private', 'wechat-upload.key');
+  assert.equal((await stat(keyPath)).mode & 0o777, 0o600);
+  assert.equal((await readFile(keyPath, 'utf8')).trim(), key.toString().trim());
+  assert.equal((await miniReleaseStatus(env)).configured, true);
+  assert.equal((await miniReleaseStatus({ ...env, WECHAT_MINI_APPID: 'wx1234567890123456' })).configured, false);
 });

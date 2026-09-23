@@ -75,7 +75,10 @@ def main():
                 run(['runuser', '-u', 'postgres', '--', 'pg_dump', '--format=custom', '--dbname=' + database], stdout=output)
                 output.flush()
                 os.fsync(output.fileno())
-        run(['tar', '--create', '--file=' + str(staging / 'persistent.tar'), '--directory=/', 'srv/aition/shared/files', 'srv/aition/shared/identity', 'etc/aition'])
+        persistent_paths = ['srv/aition/shared/files', 'srv/aition/shared/identity', 'etc/aition']
+        if Path('/srv/aition/shared/mini-release').is_dir():
+            persistent_paths.append('srv/aition/shared/mini-release')
+        run(['tar', '--create', '--file=' + str(staging / 'persistent.tar'), '--directory=/', *persistent_paths])
         manifest = {
             'format': 1, 'createdAt': stamp, 'databases': DATABASES,
             'release': str(Path('/srv/aition/current').resolve()),

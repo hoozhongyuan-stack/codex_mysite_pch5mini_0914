@@ -105,9 +105,13 @@ services:
       IDENTITY_KEY: ${IDENTITY_INTERNAL_KEY:?set in .env.production}
       PUBLIC_ORIGIN: https://aition.art
       VINEXT_TRUSTED_HOSTS: aition.art,www.aition.art
+      MINI_RELEASE_PRIVATE_DIR: /data/mini-release
+      MINI_RELEASE_RECORDS: /data/mini-release/records.json
+      MINI_CI_OUTPUT_DIR: /data/mini-release/output
     volumes:
       - ../data/files:/data/files
       - ../data/backups:/data/backups
+      - ../data/mini-release:/data/mini-release
     depends_on:
       cms-migrate:
         condition: service_completed_successfully

@@ -11,7 +11,7 @@ import subprocess
 import tarfile
 
 EXPECTED = {'aition_cms_uat.dump', 'aition_identity_uat.dump', 'persistent.tar'}
-PREFIXES = ('srv/aition/shared/files', 'srv/aition/shared/identity', 'etc/aition')
+PREFIXES = ('srv/aition/shared/files', 'srv/aition/shared/identity', 'srv/aition/shared/mini-release', 'etc/aition')
 
 
 def run(args, **kwargs):

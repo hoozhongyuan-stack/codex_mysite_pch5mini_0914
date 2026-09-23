@@ -3,6 +3,7 @@ import hashlib, hmac, re, secrets
 from datetime import timedelta
 from urllib.parse import urlencode
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 from .models import SocialConfig, SocialIdentity, VisitorState, Consent, Session, Audit
@@ -107,9 +108,7 @@ def bind_phone(data):
  from .views import rate
  rate('mini-phone:'+str(user.pk),10)
  secret=cipher().decrypt(c.secret_encrypted.encode()).decode()
- access=request_json('https://api.weixin.qq.com/cgi-bin/token?'+urlencode({'grant_type':'client_credential','appid':c.client_id,'secret':secret}))
- token=access.get('access_token')
- if not isinstance(token,str) or not token: raise ValueError('微信手机号授权暂不可用，请稍后重试')
+ token=_wx_token(c)
  result=request_json('https://api.weixin.qq.com/wxa/business/getuserphonenumber?access_token='+token,{'code':code},json_body=True)
  info=result.get('phone_info') if isinstance(result.get('phone_info'),dict) else {}
  pure=str(info.get('purePhoneNumber') or '')
@@ -136,11 +135,22 @@ def bind_phone(data):
 
 
 def _wx_token(config):
+ key='wechat-mini-token:'+hashlib.sha256((config.client_id+':'+config.secret_encrypted).encode()).hexdigest()
+ cached=cache.get(key)
+ if isinstance(cached,str) and cached:return cached
  secret=cipher().decrypt(config.secret_encrypted.encode()).decode()
  access=request_json('https://api.weixin.qq.com/cgi-bin/token?'+urlencode({'grant_type':'client_credential','appid':config.client_id,'secret':secret}))
  token=access.get('access_token')
- if not isinstance(token,str) or not token: raise ValueError('微信订阅消息暂不可用，请稍后重试')
+ if not isinstance(token,str) or not token: raise ValueError('微信接口调用暂不可用，请稍后重试')
+ try: ttl=max(60,min(int(access.get('expires_in',7200))-300,6900))
+ except (TypeError,ValueError): ttl=6900
+ cache.set(key,token,ttl)
  return token
+
+def release_access_token():
+ c=SocialConfig.objects.filter(pk=PROVIDER).first()
+ if not c or not c.client_id or not c.secret_encrypted: raise ValueError('请先在后台配置小程序 AppID 和 AppSecret')
+ return {'accessToken':_wx_token(c),'appid':c.client_id}
 
 def _clean_message_data(value):
  if not isinstance(value,dict) or len(value)>20: raise ValueError('订阅消息数据无效')

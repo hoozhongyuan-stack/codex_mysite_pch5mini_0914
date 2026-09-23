@@ -23,6 +23,13 @@ class MiniTests(TestCase):
   self.assertNotIn('fixture-only',str(mini.status(True)))
   self.assertNotIn('fixture-only',SocialConfig.objects.get(pk='wechat-mini').secret_encrypted)
   with self.assertRaises(ValueError):mini.save({'clientId':'bad','enabled':True},'test')
+ @patch('accounts.mini.request_json',return_value={'access_token':'temporary-platform-token'})
+ def test_release_token_uses_existing_encrypted_app_secret(self,platform):
+  result=mini.release_access_token()
+  self.assertEqual(result['appid'],'wx'+'a'*16)
+  self.assertEqual(result['accessToken'],'temporary-platform-token')
+  self.assertNotIn('fixture-only',str(result))
+  self.assertIn('secret=fixture-only',platform.call_args.args[0])
  @patch('accounts.mini.request_json',return_value={'openid':'linked-open'})
  def test_explicit_binding_keeps_existing_account_and_rejects_takeover(self,platform):
   from .models import Session
@@ -57,7 +64,7 @@ class MiniTests(TestCase):
   self.assertEqual(result['user']['nickname'],'小树')
   self.assertEqual(result['user']['avatarId'],'a0000000-0000-4000-8000-000000000000')
   with self.assertRaises(ValueError):mini.save_profile({'session':self._session(user,'d'*43),'nickname':'x'*25})
- @patch('accounts.mini.request_json',side_effect=[{'access_token':'platform-token'},{'phone_info':{'purePhoneNumber':'13800138000','countryCode':'86'}},{'access_token':'platform-token'},{'phone_info':{'purePhoneNumber':'13800138000','countryCode':'86'}}])
+ @patch('accounts.mini.request_json',side_effect=[{'access_token':'platform-token','expires_in':7200},{'phone_info':{'purePhoneNumber':'13800138000','countryCode':'86'}},{'phone_info':{'purePhoneNumber':'13800138000','countryCode':'86'}}])
  def test_phone_is_encrypted_masked_and_unique(self,platform):
   user=User.objects.create_user(username='phone-user',password='fixture-password')
   result=mini.bind_phone({'session':self._session(user),'code':'phone-code'})
@@ -68,3 +75,4 @@ class MiniTests(TestCase):
   self.assertNotIn('13800138000',state.phone_encrypted)
   other=User.objects.create_user(username='phone-other',password='fixture-password')
   with self.assertRaises(ValueError):mini.bind_phone({'session':self._session(other,'e'*43),'code':'another-code'})
+  self.assertEqual(platform.call_count,3)

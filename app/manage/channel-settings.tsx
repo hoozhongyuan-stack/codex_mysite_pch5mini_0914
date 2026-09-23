@@ -26,6 +26,7 @@ export default function ChannelSettings({ data, floatingOnly = false }: any) {
   const [releaseForm, setReleaseForm] = useState({ version: SOFTWARE_VERSION, desc: '小程序体验版更新' });
   const [auditForm, setAuditForm] = useState({ address: 'pages/index/index', title: '首页', tag: '品牌 内容 商城', first_class: '', first_id: '', second_class: '', second_id: '', third_class: '', third_id: '' });
   const [releaseQr, setReleaseQr] = useState('');
+  const [releaseKeyFile, setReleaseKeyFile] = useState<File | null>(null);
   const [tab, setTab] = useAdminTab('miniTab','base',['base','home','micros','nav','notify','release','checks']);
   useAdminUnsavedChanges(dirty, ['miniTab']);
   const load = async () => {
@@ -155,13 +156,33 @@ export default function ChannelSettings({ data, floatingOnly = false }: any) {
         body: JSON.stringify({ action, ...releaseForm, audit: action === 'submitAudit' ? auditForm : undefined }),
       });
       const d: any = await r.json();
-      if (!r.ok) throw Error(d.error);
+      if (!r.ok || !d.ok) throw Error(d.error || d.record?.stderr || d.record?.message || '微信发布操作失败');
       setReleaseState((prev: any) => ({ ...(prev || {}), records: d.records || prev?.records || [] }));
       if (d.qrcodeDataUrl) setReleaseQr(d.qrcodeDataUrl);
       setMessage(action === 'preview' ? '预览码已生成。' : action === 'upload' ? '体验版已上传到微信平台。' : '已提交微信审核。');
       await loadReleaseState();
     } catch (e) {
       setMessage((e as Error).message);
+    } finally {
+      setReleaseBusy('');
+    }
+  }
+
+  async function uploadReleaseKey() {
+    if (!releaseKeyFile) return;
+    setReleaseBusy('key');
+    setMessage('');
+    try {
+      const body = new FormData();
+      body.set('key', releaseKeyFile);
+      const response = await fetch('/api/mini-release/credential', { method: 'POST', body });
+      const result: any = await response.json();
+      if (!response.ok) throw Error(result.error || '上传密钥失败');
+      setReleaseKeyFile(null);
+      await loadReleaseState();
+      setMessage('代码上传密钥已保存。');
+    } catch (error) {
+      setMessage((error as Error).message);
     } finally {
       setReleaseBusy('');
     }
@@ -655,22 +676,21 @@ export default function ChannelSettings({ data, floatingOnly = false }: any) {
           <>
             <div className="heading-row"><div><h2>小程序版本发布</h2><p className="muted">后台内容、首页装修、底部导航和微页面发布后，小程序可直接读取；只有代码包变化才需要上传体验版并提交微信审核。</p></div><button className="btn" onClick={() => loadReleaseState().catch((e) => setMessage(e.message))}>刷新状态</button></div>
             <section className="mini-section mini-release-workflow">
-              <div className="mini-release-step"><span>1</span><div><h3>环境准备</h3><p>先确认服务器能找到小程序构建目录、AppID 和上传密钥。全部就绪后，才能生成预览码和上传体验版。</p></div></div>
+              <div className="mini-release-step"><span>1</span><div><h3>发布准备</h3><p>在这里配置微信应用并上传代码密钥；小程序代码包由部署自动生成。</p></div></div>
               <div className="mini-release-status-list">
-                <div className={releaseState?.appidMasked ? 'ok' : 'warn'}><b>AppID</b><strong>{releaseState?.appidMasked || '未读取'}</strong><p>来自 WECHAT_MINI_APPID；未配置时会读取 project.config.json。</p></div>
-                <div className={releaseState?.projectExists ? 'ok' : 'warn'}><b>小程序目录</b><strong>{releaseState?.projectExists ? '已检测到' : '未找到'}</strong><p>{releaseState?.projectPath || 'miniapp/dist'}</p></div>
-                <div className={releaseState?.privateKeyExists ? 'ok' : 'warn'}><b>上传密钥</b><strong>{releaseState?.privateKeyExists ? '已检测到' : releaseState?.privateKeyConfigured ? '路径无效' : '未配置'}</strong><p>配置 WECHAT_MINI_UPLOAD_KEY_PATH，文件只放在服务器，不在后台展示。</p></div>
-                <div className={releaseState?.tokenConfigured ? 'ok' : 'warn'}><b>审核令牌</b><strong>{releaseState?.tokenConfigured ? '已配置' : '待配置'}</strong><p>提交审核需要 WECHAT_MINI_ACCESS_TOKEN；未配置时仍可预览和上传体验版。</p></div>
+                <div className={releaseState?.appidMasked && releaseState?.appidMatchesProject ? 'ok' : 'warn'}><b>AppID</b><strong>{releaseState?.appidMasked || '未配置'}</strong><p>{releaseState?.appidMatchesProject === false ? '后台 AppID 与代码包不一致，请核对。' : '可在下方微信应用配置中修改。'}</p></div>
+                <div className={releaseState?.projectExists ? 'ok' : 'warn'}><b>小程序代码包</b><strong>{releaseState?.projectExists ? '已准备' : '未随版本部署'}</strong><p>{releaseState?.projectExists ? '部署时自动构建，无需手工上传。' : '当前镜像缺少代码包，需要部署包含小程序的新镜像。'}</p></div>
+                <div className={releaseState?.privateKeyExists ? 'ok' : 'warn'}><b>代码上传密钥</b><strong>{releaseState?.privateKeyExists ? '已保存' : '待上传'}</strong><p>只在服务器私有目录保存，后台不显示内容。</p></div>
+                <div className={releaseState?.tokenConfigured ? 'ok' : 'warn'}><b>审核调用凭证</b><strong>{releaseState?.tokenConfigured ? '已配置 AppSecret' : '待配置 AppSecret'}</strong><p>提交审核时由服务端向微信获取临时令牌，无需手工填写。</p></div>
               </div>
-              {!releaseState?.configured && <p className="notice">当前还不能上传体验版：请先配置 AppID、上传密钥，并确认小程序目录存在。后台配置内容本身发布后会被小程序直接读取，不需要走微信审核。</p>}
-              <div className="mini-release-config-help">
-                <b>服务器配置参考</b>
-                <code>WECHAT_MINI_APPID=小程序AppID</code>
-                <code>WECHAT_MINI_UPLOAD_KEY_PATH=/etc/aition/wechat-mini-upload.key</code>
-                <code>MINI_CI_PROJECT_PATH=/srv/aition/current/miniapp/dist（可选）</code>
-                <code>MINI_RELEASE_RECORDS=/srv/aition/shared/mini-release-records.json（可选）</code>
-                <code>WECHAT_MINI_ACCESS_TOKEN=微信接口调用令牌（提交审核时需要）</code>
+              {!releaseState?.configured && <p className="notice">当前还不能上传体验版。请完成下方配置；如果代码包缺失，应先部署包含小程序构建产物的新镜像。后台内容发布后仍由小程序直接读取。</p>}
+              <MiniLoginSettings onSaved={() => loadReleaseState().catch((error) => setMessage(error.message))}/>
+              <div className="mini-release-key-upload">
+                <div><b>代码上传密钥</b><p className="muted">从微信公众平台下载 .key 文件后在这里上传。只有站点所有者可以更换；文件内容不会在后台回显。</p></div>
+                <div className="flex-actions"><input type="file" accept=".key,text/plain" aria-label="选择代码上传密钥文件" disabled={!releaseState?.canManageKey || Boolean(releaseBusy)} onChange={(event) => setReleaseKeyFile(event.target.files?.[0] || null)}/><button className="btn primary" disabled={!releaseState?.canManageKey || !releaseKeyFile || Boolean(releaseBusy)} aria-busy={releaseBusy === 'key'} onClick={uploadReleaseKey}>上传密钥</button></div>
               </div>
+              {!releaseState?.canManageKey && <p className="muted">更换上传密钥需要站点所有者权限。</p>}
+              <p className="muted">微信公众平台的“代码上传 IP 白名单”仍需管理员在微信侧设置；这是微信平台的安全规则。</p>
             </section>
             <section className="mini-section mini-release-workflow">
               <div className="mini-release-step"><span>2</span><div><h3>体验版</h3><p>生成预览码给手机确认；确认无误后上传体验版。机器人通道当前为 robot {releaseState?.robot || 1}。</p></div></div>

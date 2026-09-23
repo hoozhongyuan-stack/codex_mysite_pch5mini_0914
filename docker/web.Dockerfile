@@ -15,6 +15,9 @@ RUN pnpm install --frozen-lockfile
 
 FROM deps AS build
 COPY . .
+ARG MINI_API_ORIGIN=https://aition.art
+RUN pnpm --dir miniapp install --frozen-lockfile \
+  && MINI_API_ORIGIN="$MINI_API_ORIGIN" pnpm --dir miniapp build
 ENV DEPLOY_TARGET=node
 RUN pnpm run build:uat
 

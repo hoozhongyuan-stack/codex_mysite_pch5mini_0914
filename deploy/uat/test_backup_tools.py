@@ -61,6 +61,15 @@ class BackupVerificationTests(unittest.TestCase):
                     restore.verify(directory)
                 run.assert_not_called()
 
+    def test_release_key_directory_is_accepted_in_persistent_snapshot(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            self.snapshot(directory, 'srv/aition/shared/mini-release/records.json')
+            with patch.object(restore, 'run') as run:
+                restore.verify(directory)
+                self.assertEqual(run.call_count, 2)
+
+
     def test_termination_raises_to_unwind_finally(self):
         with self.assertRaises(SystemExit) as result:
             backup.stop_signal(15, None)
