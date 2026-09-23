@@ -5,32 +5,44 @@
 
 ## 中文说明
 
-GEO Studio 是一套面向品牌官网、内容运营、展示型商城和微信小程序的轻量化全栈系统。它把 PC/H5 官网、中文后台、会员管理、商品与订单、积分商城、视频专栏、沙龙活动、表单收集、素材管理、小程序装修和 GEO/SEO 基础能力放在同一个工作台中，适合需要快速搭建“内容 + 商品 + 会员 + 活动”一体化业务入口的团队。
+GEO Studio 是一套面向品牌企业、内容型企业、零售品牌、私域运营团队和活动型业务的开源三端内容与商城一体化系统。系统同时支持 **PC 网站、H5 移动网站和微信小程序**，帮助企业把中英文品牌内容、GEO 内容优化、商品销售、活动报名、积分会员和运营数据整合到同一个后台中统一管理。
 
-### 系统价值
+它适合希望同时经营“内容传播 + 商品转化 + 私域会员”的企业使用，例如消费品品牌、生活方式品牌、酒水与食品品牌、文创零售、教育课程、线下活动、沙龙会、品牌官网和轻量电商业务。
 
-- **一套后台管理多端内容**：文章、商品、视频、沙龙活动、表单、素材、导航、主题、首页装修和微页面都可以在后台维护，并同步服务 PC、H5 和微信小程序。
-- **内容运营和交易闭环结合**：支持购物车、订单、线下付款、积分商城、活动报名、表单收集和会员资料，减少多个工具之间反复切换。
-- **更适合中文品牌展示**：后台采用中文操作语境，前台支持中英文内容，适合品牌官网、内容栏目、商品展示、沙龙活动和私域会员沉淀。
-- **GEO / SEO 友好**：内置站点元数据、结构化内容、AI 爬虫识别、引用来源记录和 GEO 洞察，便于搜索引擎与 AI 检索场景理解站点内容。
-- **小程序装修能力**：支持首页装修、底部导航、轮播图、图片热区、商品楼层、搜索框、公告栏、辅助线和微页面管理，常规内容调整不需要频繁改代码。
-- **权限和运营安全**：后台包含权限组、子账号、操作日志、隐私政策、协议管理和敏感字段保护，便于团队协作和审计。
-- **私有化部署友好**：项目包含 Docker 生产部署方案、PostgreSQL 适配方向和 UAT 环境实践，适合部署到自有云服务器。
+GEO Studio 的核心思路不是单独做一个商城，也不是单独做一个内容站，而是把内容、商品、活动和会员连接起来：企业可以发布中英文文章、视频、商品、积分商品和活动；用户可以通过 PC、H5 或微信小程序浏览内容、参与活动、下单购买、兑换积分商品；后台可以统一管理内容、商品、订单、会员、权限、素材、导航、页面装修和数据统计。
 
-### 适用场景
+### 一句话定位
 
-- 品牌官网与内容营销站点
-- 带展示、询价、线下成交的轻商城
-- 微信小程序私域入口
-- 课程、视频、沙龙活动和报名管理
-- 需要兼顾 GEO / SEO 可见性的内容系统
-- 小团队或单品牌的内容、会员、商品一体化后台
+> 面向品牌企业的三端内容与商城一体化系统：PC / H5 / 微信小程序，支持中英文内容、GEO 优化、商品交易、活动报名与会员运营。
+
+### 核心亮点
+
+| 能力 | 说明 |
+| --- | --- |
+| 三端一体化 | 同一套后台管理 PC 官网、H5 移动站和微信小程序，减少多套系统重复维护。 |
+| 中英文内容 | PC / H5 支持中文与英文内容展示，适合品牌官网、海外展示和双语内容运营。 |
+| GEO 内容优化 | 围绕 AI 搜索、搜索引擎和品牌可发现性，管理站点元数据、结构化内容、AI 爬虫识别和 GEO 健康建议。 |
+| 商城与内容连接 | 商品、购物车、订单、积分商城、线下付款和微信支付配置与文章、视频、活动形成完整转化链路。 |
+| 微信小程序 | 支持微信信任登录、手机号授权、分享、底部导航、首页装修、微页面、轮播图、图片热区和商品楼层。 |
+| 活动与会员运营 | 支持沙龙会、报名、签到、统计、会员资料、积分、订单和行为记录。 |
+| 后台运营体系 | 内容、商品、订单、素材、导航、配置、权限组、子账号、日志和数据面板集中管理。 |
+| 私有化部署 | 提供 Docker 生产部署参考、UAT 实践和 PostgreSQL 适配方向，便于部署到自有云服务器。 |
+
+### 适合哪些企业使用
+
+- **品牌型企业**：需要官网展示、品牌内容、产品展示和线索转化。
+- **消费品与零售品牌**：例如酒水、食品、生活方式、文创、家居、礼品、轻奢消费品。
+- **内容驱动型企业**：需要通过文章、视频、案例、知识内容建立信任并带动转化。
+- **私域运营团队**：需要微信小程序、会员资料、积分、订单、活动和复购运营。
+- **活动与课程业务**：需要沙龙会、报名、签到、统计、课程或视频内容展示。
+- **轻量电商团队**：需要商品、订单、线下付款、积分商城和内容导购，但不想维护多套系统。
+- **重视 GEO / SEO 的团队**：希望品牌内容更容易被搜索引擎和 AI 搜索理解、引用和发现。
 
 ### 主要模块
 
 | 模块 | 能力 |
 | --- | --- |
-| PC / H5 前台 | 多语言首页、文章、商品、视频、沙龙、积分商城、会员中心 |
+| PC / H5 前台 | 中英文首页、文章、商品、视频、沙龙、积分商城、会员中心 |
 | 微信小程序 | 首页装修、微页面、底部导航、分享、微信登录、手机号授权、购物车与订单 |
 | 内容管理 | 文章、分类、富文本、素材、图片库、视频库 |
 | 商品与订单 | 商品、规格、库存、购物车、线下付款、订单审核、发货与售后基础流程 |
@@ -75,32 +87,44 @@ pnpm dev
 
 ## English Overview
 
-GEO Studio is a lightweight full-stack system for brand websites, content operations, showcase commerce, member management, and WeChat Mini Program experiences. It combines a PC/H5 website, Chinese admin console, products, orders, points mall, videos, salons/events, forms, assets, Mini Program page decoration, and GEO/SEO foundations in one workspace.
+GEO Studio is an open-source, multi-channel content and commerce system for brand companies, content-driven businesses, retail brands, private-domain operators, and event-based organizations. It supports **PC websites, H5 mobile websites, and WeChat Mini Programs**, allowing businesses to manage bilingual brand content, GEO-ready content, product commerce, events, points, members, and operational data from one admin console.
 
-### Why it is useful
+The system is designed for companies that want to combine content marketing, product conversion, and member operations in one platform. Typical use cases include consumer brands, lifestyle brands, wine and food businesses, cultural products, education programs, salons, offline events, brand websites, and lightweight commerce projects.
 
-- **One admin for multiple channels**: manage articles, products, videos, salons, forms, assets, navigation, themes, home-page decoration, and custom mini pages from a single console, then serve PC, H5, and WeChat Mini Program experiences.
-- **Content and commerce in one flow**: cart, orders, offline payment, points mall, event signup, form collection, and member profiles work together instead of living in separate tools.
-- **Built for Chinese brand operations**: the admin interface follows Chinese operational habits, while the public website supports Chinese and English content.
-- **GEO / SEO ready**: site metadata, structured content, AI crawler identification, citation evidence, and GEO insight foundations help search engines and AI systems understand the website.
-- **Mini Program page-building**: supports home decoration, bottom navigation, carousels, image hot zones, product sections, search blocks, notice bars, dividers, and reusable mini pages.
-- **Team operations and auditability**: permission groups, sub-accounts, operation logs, policy management, and sensitive-field protection support safer collaboration.
-- **Private-deployment friendly**: Docker deployment references, PostgreSQL integration direction, and UAT practices are included for self-hosted cloud servers.
+GEO Studio is not just a CMS or a standalone shop. It connects content, products, activities, and members into one business flow. Teams can publish bilingual articles, videos, products, points-based goods, and events; users can browse, register, purchase, redeem, and interact through PC, H5, and WeChat Mini Program experiences; operators can manage content, products, orders, members, permissions, assets, navigation, page decoration, and analytics in one backend.
 
-### Good fit for
+### One-line positioning
 
-- Brand websites and content marketing sites
-- Showcase commerce with inquiry or offline transactions
-- WeChat Mini Program private traffic entry points
-- Course, video, salon/event, and signup management
-- Content systems that care about GEO / SEO visibility
-- Small teams that need one backend for content, members, and products
+> A multi-channel content and commerce system for brand companies: PC, H5, and WeChat Mini Program support with bilingual content, GEO optimization, product commerce, events, and member operations.
+
+### Key highlights
+
+| Capability | Description |
+| --- | --- |
+| Three-channel experience | Manage PC website, H5 mobile website, and WeChat Mini Program experiences from one admin console. |
+| Bilingual content | PC and H5 support Chinese and English content, suitable for brand websites and bilingual content operations. |
+| GEO-ready content | Manage metadata, structured content, AI crawler recognition, citation evidence, and GEO health suggestions for better discoverability. |
+| Content + commerce | Products, cart, orders, points mall, offline payment, and WeChat payment settings connect with articles, videos, and events. |
+| WeChat Mini Program | Supports WeChat trusted login, phone authorization, sharing, bottom navigation, home decoration, mini pages, carousels, image hot zones, and product sections. |
+| Events and members | Supports salons, signup, check-in, statistics, member profiles, points, orders, and behavior records. |
+| Admin operations | Centralized management for content, products, orders, assets, navigation, configuration, permission groups, sub-accounts, logs, and dashboards. |
+| Private deployment | Includes Docker production deployment references, UAT practices, and PostgreSQL integration direction for self-hosted cloud servers. |
+
+### Best suited for
+
+- **Brand companies** that need brand websites, content publishing, product presentation, and conversion flows.
+- **Consumer and retail brands**, including wine, food, lifestyle, cultural products, home goods, gifts, and lightweight premium products.
+- **Content-driven businesses** that use articles, videos, cases, or knowledge content to build trust and drive conversion.
+- **Private-domain teams** that need WeChat Mini Program entry points, member profiles, points, orders, events, and repeat-purchase operations.
+- **Event and course businesses** that need salons, signup, check-in, statistics, courses, or video content.
+- **Lightweight commerce teams** that need products, orders, offline payment, points mall, and content-led shopping without maintaining multiple systems.
+- **GEO / SEO-focused teams** that want brand content to be easier for search engines and AI search systems to understand, cite, and discover.
 
 ### Main modules
 
 | Module | Capabilities |
 | --- | --- |
-| PC / H5 website | Multilingual home, articles, products, videos, salons, points mall, member center |
+| PC / H5 website | Bilingual home, articles, products, videos, salons, points mall, member center |
 | WeChat Mini Program | Page decoration, custom mini pages, bottom navigation, sharing, WeChat login, phone authorization, cart and orders |
 | Content management | Articles, categories, rich text, assets, image library, video library |
 | Products and orders | Products, options, stock, cart, offline payment, order review, fulfillment and basic after-sales |
